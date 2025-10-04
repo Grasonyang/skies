@@ -10,6 +10,7 @@ interface ActionHUDPanelProps {
   forecastData: ForecastResponse | null;
   loading?: boolean;
   onFeedback?: () => void;
+  className?: string;
 }
 
 const riskCopy: Record<string, string> = {
@@ -24,12 +25,16 @@ const ActionHUDPanel: React.FC<ActionHUDPanelProps> = ({
   forecastData,
   loading = false,
   onFeedback,
+  className,
 }) => {
   const { suggestions, dominantRisk } = useActionHUD({ aqiData, forecastData });
 
+  const baseClass = 'bg-white/95 backdrop-blur-md rounded-3xl shadow-xl p-6 w-full max-w-3xl';
+  const combinedClass = className ? `${baseClass} ${className}` : baseClass;
+
   if (loading) {
     return (
-      <div className="bg-white/95 backdrop-blur-md rounded-3xl shadow-xl p-6 w-full max-w-3xl animate-pulse">
+      <div className={`${combinedClass} animate-pulse`}>
         <div className="h-6 bg-gray-200 w-48 rounded mb-4" />
         <div className="space-y-3">
           {[1, 2, 3].map((item) => (
@@ -42,14 +47,14 @@ const ActionHUDPanel: React.FC<ActionHUDPanelProps> = ({
 
   if (!aqiData) {
     return (
-      <div className="bg-white rounded-3xl shadow-xl p-6 text-gray-500 w-full max-w-3xl">
+      <div className={`${combinedClass} text-gray-500`}>
         尚未取得空氣品質資料。
       </div>
     );
   }
 
   return (
-    <div className="bg-white/95 backdrop-blur-md rounded-3xl shadow-xl p-6 w-full max-w-3xl">
+    <div className={combinedClass}>
       <div className="flex flex-col gap-4">
         <header className="flex flex-col md:flex-row md:items-center md:justify-between gap-3">
           <div>

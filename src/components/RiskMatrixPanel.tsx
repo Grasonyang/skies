@@ -17,6 +17,7 @@ interface RiskMatrixPanelProps {
     }>;
   } | null;
   loading?: boolean;
+  className?: string;
 }
 
 /**
@@ -26,6 +27,7 @@ const RiskMatrixPanel: React.FC<RiskMatrixPanelProps> = ({
   aqiData,
   forecastData,
   loading = false,
+  className,
 }) => {
   // 計算所有活動的風險決策
   const decisions = useMemo(() => {
@@ -42,9 +44,12 @@ const RiskMatrixPanel: React.FC<RiskMatrixPanelProps> = ({
     );
   }, [aqiData, forecastData]);
 
+  const baseClass = 'bg-white rounded-2xl shadow-xl p-6 max-w-4xl w-full';
+  const combinedClass = className ? `${baseClass} ${className}` : baseClass;
+
   if (loading) {
     return (
-      <div className="bg-white rounded-2xl shadow-xl p-6 animate-pulse">
+      <div className={`${combinedClass} animate-pulse`}>
         <div className="h-8 bg-gray-200 rounded w-1/2 mb-4"></div>
         <div className="space-y-3">
           {[1, 2, 3].map((i) => (
@@ -57,7 +62,7 @@ const RiskMatrixPanel: React.FC<RiskMatrixPanelProps> = ({
 
   if (!aqiData) {
     return (
-      <div className="bg-white rounded-2xl shadow-xl p-6">
+      <div className={`${combinedClass} text-gray-500`}>
         <h3 className="text-lg font-bold text-gray-800 mb-2">活動決策系統</h3>
         <p className="text-gray-500 text-sm">等待空氣品質數據...</p>
       </div>
@@ -65,7 +70,7 @@ const RiskMatrixPanel: React.FC<RiskMatrixPanelProps> = ({
   }
 
   return (
-    <div className="bg-white rounded-2xl shadow-xl p-6 max-w-4xl w-full">
+    <div className={combinedClass}>
       {/* 標題 */}
       <div className="mb-6">
         <h3 className="text-2xl font-bold text-gray-800 mb-2">

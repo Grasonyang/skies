@@ -22,6 +22,12 @@ import PollutantFingerprintPanel from '@/components/PollutantFingerprintPanel';
 import ActionHUDPanel from '@/components/ActionHUDPanel';
 import FeedbackConsole from '@/components/FeedbackConsole';
 
+const ZONE_ORDER: Record<'dangerous' | 'caution' | 'safe', number> = {
+  dangerous: 0,
+  caution: 1,
+  safe: 2,
+};
+
 const MapComponent = () => {
   const apiKey = process.env.NEXT_PUBLIC_GOOGLE_MAPS_API_KEY;
   const { location, loading, error, suggestedZoom } = useGeolocation();
@@ -64,10 +70,10 @@ const MapComponent = () => {
   // 創新功能面板的展開/收合狀態
   const [showForecast, setShowForecast] = useState(false);
   const [showHealthRec, setShowHealthRec] = useState(false);
-  const [showRiskMatrix, setShowRiskMatrix] = useState(false);
   const [showFingerprint, setShowFingerprint] = useState(false);
-  const [showActionHud, setShowActionHud] = useState(false);
   const [showFeedback, setShowFeedback] = useState(false);
+  const [showActionSuite, setShowActionSuite] = useState(false);
+  const [actionSuiteTab, setActionSuiteTab] = useState<'hud' | 'matrix'>('hud');
 
   const commuteZones = useCommuteZones({ location, aqiData });
 
@@ -171,25 +177,31 @@ const MapComponent = () => {
         <div className="absolute top-4 left-4 z-10 space-y-3">
           {location && <LocationStatus location={location} />}
           {commuteZones.length > 0 && (
-            <div className="bg-white/90 backdrop-blur-md px-4 py-3 rounded-2xl shadow-lg text-xs text-slate-600 border border-slate-100 w-64">
-              <p className="font-semibold text-slate-700 mb-2">🚇 通勤區速寫</p>
-              <ul className="space-y-1">
-                {commuteZones.map((zone) => (
-                  <li key={zone.id} className="flex items-center justify-between">
-                    <span className="flex items-center gap-2">
-                      <span
-                        className="w-3 h-3 rounded-full"
-                        style={{ backgroundColor: `${zoneColor(zone.level)}AA` }}
-                      ></span>
-                      {zone.level === 'safe'
-                        ? '安全'
-                        : zone.level === 'caution'
-                        ? '警示'
-                        : '危險'}
-                    </span>
-                    <span className="font-semibold text-slate-700">AQI {Math.round(zone.averageAqi)}</span>
-                  </li>
-                ))}
+            <div className="bg-white/90 backdrop-blur-md px-4 py-3 rounded-2xl shadow-lg text-xs text-slate-600 border border-slate-100 w-72">
+              <p className="font-semibold text-slate-700 mb-1">🚇 通勤圈層級</p>
+              <p className="text-[11px] text-slate-500 leading-relaxed">
+                以目前定位為中心的 3 個圈層，越靠近內圈代表風險越高，顏色對應安全等級。
+              </p>
+              <ul className="mt-2 space-y-1.5">
+                {commuteZones
+                  .slice()
+                  .sort((a, b) => ZONE_ORDER[a.level] - ZONE_ORDER[b.level])
+                  .map((zone) => (
+                    <li key={zone.id} className="flex items-center justify-between">
+                      <span className="flex items-center gap-2">
+                        <span
+                          className="w-3.5 h-3.5 rounded-full"
+                          style={{ backgroundColor: `${zoneColor(zone.level)}BB` }}
+                        ></span>
+                        {zone.level === 'safe'
+                          ? '安全'
+                          : zone.level === 'caution'
+                          ? '警示'
+                          : '危險'}
+                      </span>
+                      <span className="font-semibold text-slate-700">AQI {Math.round(zone.averageAqi)}</span>
+                    </li>
+                  ))}
               </ul>
               <p className="text-[10px] text-slate-400 mt-2">
                 每 10 分鐘更新，採樣目前站點推估並預留 TEMPO 快取。
@@ -212,7 +224,7 @@ const MapComponent = () => {
           <div
             role="dialog"
             aria-modal="true"
-            className="fixed inset-0 z-20 flex items-center justify-center bg-black/40 backdrop-blur-sm px-4"
+            className="fixed inset-0 z-30 flex items-center justify-center bg-black/45 backdrop-blur-sm px-4"
             onClick={() => setShowForecast(false)}
           >
             <div
@@ -226,11 +238,13 @@ const MapComponent = () => {
               >
                 ✕
               </button>
-              <ForecastPanel
-                data={forecastData}
-                loading={forecastLoading}
-                error={forecastError}
-              />
+              <div className="max-h-[80vh] overflow-y-auto pr-1">
+                <ForecastPanel
+                  data={forecastData}
+                  loading={forecastLoading}
+                  error={forecastError}
+                />
+              </div>
             </div>
           </div>
         )}
@@ -240,7 +254,7 @@ const MapComponent = () => {
           <div
             role="dialog"
             aria-modal="true"
-            className="fixed inset-0 z-20 flex items-center justify-center bg-black/40 backdrop-blur-sm px-4"
+            className="fixed inset-0 z-30 flex items-center justify-center bg-black/45 backdrop-blur-sm px-4"
             onClick={() => setShowHealthRec(false)}
           >
             <div
@@ -254,39 +268,14 @@ const MapComponent = () => {
               >
                 ✕
               </button>
-              <HealthRecommendationPanel aqiData={aqiData} />
+              <div className="max-h-[80vh] overflow-y-auto pr-1">
+                <HealthRecommendationPanel aqiData={aqiData} />
+              </div>
             </div>
           </div>
         )}
 
         {/* 風險矩陣面板（創新點 #3 - RISK-MATRIX-MVP） */}
-        {showRiskMatrix && (
-          <div
-            role="dialog"
-            aria-modal="true"
-            className="fixed inset-0 z-20 flex items-center justify-center bg-black/40 backdrop-blur-sm px-4"
-            onClick={() => setShowRiskMatrix(false)}
-          >
-            <div
-              className="relative w-full max-w-5xl"
-              onClick={(e) => e.stopPropagation()}
-            >
-              <button
-                onClick={() => setShowRiskMatrix(false)}
-                className="absolute -top-3 -right-3 rounded-full bg-white shadow-lg p-2 text-gray-500 hover:text-gray-800 z-10"
-                aria-label="關閉活動決策系統"
-              >
-                ✕
-              </button>
-              <RiskMatrixPanel
-                aqiData={aqiData}
-                forecastData={forecastData}
-                loading={aqiLoading || forecastLoading}
-              />
-            </div>
-          </div>
-        )}
-
         {/* 污染指紋面板 */}
         {showFingerprint && (
           <div
@@ -295,7 +284,7 @@ const MapComponent = () => {
             className="fixed inset-0 z-30 flex items-center justify-center bg-black/50 backdrop-blur-sm px-4"
             onClick={() => setShowFingerprint(false)}
           >
-            <div className="relative" onClick={(event) => event.stopPropagation()}>
+            <div className="relative w-full max-w-5xl" onClick={(event) => event.stopPropagation()}>
               <button
                 onClick={() => setShowFingerprint(false)}
                 className="absolute -top-3 -right-3 rounded-full bg-white shadow-lg p-2 text-gray-500 hover:text-gray-800"
@@ -303,38 +292,89 @@ const MapComponent = () => {
               >
                 ✕
               </button>
-              <PollutantFingerprintPanel
-                currentData={aqiData}
-                forecastData={forecastData}
-                loading={forecastLoading}
-                error={forecastError}
-              />
+              <div className="max-h-[82vh] overflow-y-auto pr-1">
+                <PollutantFingerprintPanel
+                  currentData={aqiData}
+                  forecastData={forecastData}
+                  loading={forecastLoading}
+                  error={forecastError}
+                />
+              </div>
             </div>
           </div>
         )}
 
-        {/* 行動 HUD 面板 */}
-        {showActionHud && (
+        {/* 行動決策套件：整合行動 HUD 與活動決策 */}
+        {showActionSuite && (
           <div
             role="dialog"
             aria-modal="true"
-            className="fixed inset-0 z-30 flex items-center justify-center bg-black/40 backdrop-blur-sm px-4"
-            onClick={() => setShowActionHud(false)}
+            className="fixed inset-0 z-30 flex items-center justify-center bg-black/45 backdrop-blur-sm px-4"
+            onClick={() => setShowActionSuite(false)}
           >
-            <div className="relative" onClick={(event) => event.stopPropagation()}>
+            <div
+              className="relative w-full max-w-5xl"
+              onClick={(event) => event.stopPropagation()}
+            >
               <button
-                onClick={() => setShowActionHud(false)}
+                onClick={() => setShowActionSuite(false)}
                 className="absolute -top-3 -right-3 rounded-full bg-white shadow-lg p-2 text-gray-500 hover:text-gray-800"
-                aria-label="關閉行動 HUD"
+                aria-label="關閉行動決策介面"
               >
                 ✕
               </button>
-              <ActionHUDPanel
-                aqiData={aqiData}
-                forecastData={forecastData}
-                loading={aqiLoading || forecastLoading}
-                onFeedback={() => setShowFeedback(true)}
-              />
+              <div className="flex max-h-[85vh] flex-col overflow-hidden rounded-3xl bg-white/95 shadow-2xl">
+                <div className="flex flex-col gap-3 border-b border-slate-100 px-6 py-4 sm:flex-row sm:items-center sm:justify-between">
+                  <div>
+                    <p className="text-sm font-semibold text-slate-700">行動決策中心</p>
+                    <p className="text-xs text-slate-500">
+                      將行動 HUD 與活動決策整合成一致體驗，隨時切換視角。
+                    </p>
+                  </div>
+                  <div className="flex gap-2">
+                    <button
+                      type="button"
+                      onClick={() => setActionSuiteTab('hud')}
+                      className={`rounded-full px-4 py-2 text-sm font-semibold transition-colors ${
+                        actionSuiteTab === 'hud'
+                          ? 'bg-indigo-500 text-white shadow-md'
+                          : 'bg-slate-100 text-slate-600 hover:bg-slate-200'
+                      }`}
+                    >
+                      ⚡ 行動 HUD
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => setActionSuiteTab('matrix')}
+                      className={`rounded-full px-4 py-2 text-sm font-semibold transition-colors ${
+                        actionSuiteTab === 'matrix'
+                          ? 'bg-indigo-500 text-white shadow-md'
+                          : 'bg-slate-100 text-slate-600 hover:bg-slate-200'
+                      }`}
+                    >
+                      🎯 活動決策
+                    </button>
+                  </div>
+                </div>
+                <div className="flex-1 overflow-y-auto px-4 py-5 sm:px-6">
+                  {actionSuiteTab === 'hud' ? (
+                    <ActionHUDPanel
+                      aqiData={aqiData}
+                      forecastData={forecastData}
+                      loading={aqiLoading || forecastLoading}
+                      onFeedback={() => setShowFeedback(true)}
+                      className="mx-auto max-w-none border border-slate-100 bg-white shadow-none"
+                    />
+                  ) : (
+                    <RiskMatrixPanel
+                      aqiData={aqiData}
+                      forecastData={forecastData}
+                      loading={aqiLoading || forecastLoading}
+                      className="mx-auto max-w-none border border-slate-100 bg-white shadow-none"
+                    />
+                  )}
+                </div>
+              </div>
             </div>
           </div>
         )}
@@ -358,24 +398,24 @@ const MapComponent = () => {
         )}
 
         {/* 底部資訊欄 */}
-        <div className="absolute bottom-4 left-1/2 transform -translate-x-1/2 z-10 w-full px-4">
-          <div className="mx-auto flex w-full max-w-3xl flex-col gap-3 rounded-2xl bg-white/90 px-5 py-3 shadow-lg backdrop-blur-sm md:flex-row md:items-center md:justify-between">
+        <div className="absolute bottom-4 left-1/2 z-10 w-full max-w-4xl -translate-x-1/2 px-4">
+          <div className="mx-auto flex w-full flex-col gap-3 rounded-2xl bg-white/90 px-5 py-4 shadow-lg backdrop-blur-sm sm:max-w-none">
             <p className="text-sm font-medium text-gray-700">
               📊 空氣品質監測系統 v1.0
             </p>
-            <div className="flex flex-wrap items-center gap-2">
+            <div className="grid grid-cols-1 gap-2 sm:grid-cols-2 lg:flex lg:flex-wrap lg:justify-end">
               <button
                 onClick={() => setShowForecast(true)}
-                className="rounded-full bg-gradient-to-r from-blue-500 to-purple-500 px-4 py-2 text-sm font-semibold text-white shadow-md transition-transform hover:scale-105 focus:outline-none focus:ring-2 focus:ring-blue-400"
+                className="h-11 min-w-[160px] rounded-full bg-gradient-to-r from-blue-500 to-purple-500 px-5 text-sm font-semibold text-white shadow-md transition-transform hover:scale-[1.02] focus:outline-none focus:ring-2 focus:ring-blue-400"
                 title="查看 AI 空氣品質預測"
               >
                 🔮 AI 預測
               </button>
               <button
                 onClick={() => aqiData && setShowFingerprint(true)}
-                className={`rounded-full px-4 py-2 text-sm font-semibold text-white shadow-md transition-transform focus:outline-none focus:ring-2 focus:ring-amber-400 ${
+                className={`h-11 min-w-[160px] rounded-full px-5 text-sm font-semibold text-white shadow-md transition-transform focus:outline-none focus:ring-2 focus:ring-amber-400 ${
                   aqiData
-                    ? 'bg-gradient-to-r from-amber-500 to-orange-500 hover:scale-105'
+                    ? 'bg-gradient-to-r from-amber-500 to-orange-500 hover:scale-[1.02]'
                     : 'cursor-not-allowed bg-gray-300'
                 }`}
                 title="查看污染類型指紋"
@@ -384,34 +424,25 @@ const MapComponent = () => {
                 🧬 污染指紋
               </button>
               <button
-                onClick={() => aqiData && setShowActionHud(true)}
-                className={`rounded-full px-4 py-2 text-sm font-semibold text-white shadow-md transition-transform focus:outline-none focus:ring-2 focus:ring-indigo-400 ${
+                onClick={() => {
+                  if (!aqiData) return;
+                  setShowActionSuite(true);
+                }}
+                className={`h-11 min-w-[160px] rounded-full px-5 text-sm font-semibold text-white shadow-md transition-transform focus:outline-none focus:ring-2 focus:ring-indigo-400 ${
                   aqiData
-                    ? 'bg-gradient-to-r from-indigo-500 to-pink-500 hover:scale-105'
+                    ? 'bg-gradient-to-r from-indigo-500 via-purple-500 to-pink-500 hover:scale-[1.02]'
                     : 'cursor-not-allowed bg-gray-300'
                 }`}
-                title="查看行動風險 HUD"
+                title="整合檢視行動 HUD 與活動決策"
                 disabled={!aqiData}
               >
-                ⚡ 行動 HUD
-              </button>
-              <button
-                onClick={() => aqiData && setShowRiskMatrix(true)}
-                className={`rounded-full px-4 py-2 text-sm font-semibold text-white shadow-md transition-transform focus:outline-none focus:ring-2 focus:ring-indigo-400 ${
-                  aqiData
-                    ? 'bg-gradient-to-r from-fuchsia-500 to-rose-500 hover:scale-105'
-                    : 'cursor-not-allowed bg-gray-300'
-                }`}
-                title="查看活動決策系統"
-                disabled={!aqiData}
-              >
-                🎯 活動決策
+                🧭 行動決策中心
               </button>
               <button
                 onClick={() => aqiData && setShowHealthRec(true)}
-                className={`rounded-full px-4 py-2 text-sm font-semibold text-white shadow-md transition-transform focus:outline-none focus:ring-2 focus:ring-teal-400 ${
+                className={`h-11 min-w-[160px] rounded-full px-5 text-sm font-semibold text-white shadow-md transition-transform focus:outline-none focus:ring-2 focus:ring-teal-400 ${
                   aqiData
-                    ? 'bg-gradient-to-r from-green-500 to-teal-500 hover:scale-105'
+                    ? 'bg-gradient-to-r from-green-500 to-teal-500 hover:scale-[1.02]'
                     : 'cursor-not-allowed bg-gray-300'
                 }`}
                 title="查看個人化健康建議"

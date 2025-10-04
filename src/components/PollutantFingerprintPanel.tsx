@@ -13,10 +13,10 @@ const POLLUTANT_CONFIG: Record<
     units: string;
   }
 > = {
-  pm25: { label: 'PM2.5', color: '#ef4444', max: 150, units: 'µg/m³' },
-  pm10: { label: 'PM10', color: '#f97316', max: 200, units: 'µg/m³' },
-  o3: { label: 'O₃', color: '#38bdf8', max: 180, units: 'ppb' },
-  no2: { label: 'NO₂', color: '#6366f1', max: 150, units: 'ppb' },
+  pm25: { label: 'PM2.5', color: '#14b8a6', max: 150, units: 'µg/m³' },
+  pm10: { label: 'PM10', color: '#f59e0b', max: 200, units: 'µg/m³' },
+  o3: { label: 'O₃', color: '#6366f1', max: 180, units: 'ppb' },
+  no2: { label: 'NO₂', color: '#ec4899', max: 150, units: 'ppb' },
   so2: { label: 'SO₂', color: '#22c55e', max: 75, units: 'ppb' },
 };
 
