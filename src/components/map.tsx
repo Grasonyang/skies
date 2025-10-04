@@ -14,6 +14,7 @@ import LocationStatus from '@/components/LocationStatus';
 import AirQualityPanel from '@/components/AirQualityPanel';
 import ForecastPanel from '@/components/ForecastPanel';
 import HealthRecommendationPanel from '@/components/HealthRecommendationPanel';
+import RiskMatrixPanel from '@/components/RiskMatrixPanel';
 import HeatmapLayer from '@/components/map/HeatmapLayer';
 
 const MapComponent = () => {
@@ -58,6 +59,7 @@ const MapComponent = () => {
   // 創新功能面板的展開/收合狀態
   const [showForecast, setShowForecast] = useState(false);
   const [showHealthRec, setShowHealthRec] = useState(false);
+  const [showRiskMatrix, setShowRiskMatrix] = useState(false);
 
   // 檢查 API Key
   if (!apiKey) {
@@ -222,6 +224,34 @@ const MapComponent = () => {
           </div>
         )}
 
+        {/* 風險矩陣面板（創新點 #3 - RISK-MATRIX-MVP） */}
+        {showRiskMatrix && (
+          <div
+            role="dialog"
+            aria-modal="true"
+            className="fixed inset-0 z-20 flex items-center justify-center bg-black/40 backdrop-blur-sm px-4"
+            onClick={() => setShowRiskMatrix(false)}
+          >
+            <div
+              className="relative w-full max-w-5xl"
+              onClick={(e) => e.stopPropagation()}
+            >
+              <button
+                onClick={() => setShowRiskMatrix(false)}
+                className="absolute -top-3 -right-3 rounded-full bg-white shadow-lg p-2 text-gray-500 hover:text-gray-800 z-10"
+                aria-label="關閉活動決策系統"
+              >
+                ✕
+              </button>
+              <RiskMatrixPanel
+                aqiData={aqiData}
+                forecastData={forecastData}
+                loading={aqiLoading || forecastLoading}
+              />
+            </div>
+          </div>
+        )}
+
         {/* 熱力圖說明 */}
         {!aqiLoading && !aqiData && (
           <div className="absolute bottom-20 left-4 z-10">
@@ -255,6 +285,18 @@ const MapComponent = () => {
                 🔮 AI 預測
               </button>
               <button
+                onClick={() => aqiData && setShowRiskMatrix(true)}
+                className={`rounded-full px-4 py-2 text-sm font-semibold text-white shadow-md transition-transform focus:outline-none focus:ring-2 focus:ring-indigo-400 ${
+                  aqiData
+                    ? 'bg-gradient-to-r from-indigo-500 to-pink-500 hover:scale-105'
+                    : 'cursor-not-allowed bg-gray-300'
+                }`}
+                title="查看活動決策系統"
+                disabled={!aqiData}
+              >
+                🎯 活動決策
+              </button>
+              <button
                 onClick={() => aqiData && setShowHealthRec(true)}
                 className={`rounded-full px-4 py-2 text-sm font-semibold text-white shadow-md transition-transform focus:outline-none focus:ring-2 focus:ring-teal-400 ${
                   aqiData
@@ -264,7 +306,7 @@ const MapComponent = () => {
                 title="查看個人化健康建議"
                 disabled={!aqiData}
               >
-                � 健康建議
+                💚 健康建議
               </button>
             </div>
           </div>

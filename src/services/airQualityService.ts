@@ -105,6 +105,13 @@ class AirQualityService {
       })),
       timestamp: response.dateTime,
       location: { lat, lng },
+      // 添加 indexes 字段以支持新組件
+      indexes: [{
+        code: universalAQI.code,
+        aqi: universalAQI.aqi,
+        category: universalAQI.category,
+        dominantPollutant: universalAQI.dominantPollutant,
+      }],
     };
   }
 

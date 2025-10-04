@@ -1,21 +1,56 @@
-# Skies - 空氣品質監測系統 🌤️
+# AeroSense - 空氣品質決策系統 🌤️
 
-基於 **Google Air Quality API**、**Google Maps** 和 **Next.js** 構建的即時空氣品質監測與視覺化平台。
+基於 **Google Air Quality API**、**Google Maps** 和 **Next.js** 構建的即時空氣品質監測與智能決策平台。
 
 > 📘 **完整文檔**: 
-> - [**完整規劃 (plan.md)**](.docs/plan.md) - 所有設計、架構、實現計劃 ⭐
+> - [**Stage 1 完成總結 (stage1-completion-summary.md)**](.docs/stage1-completion-summary.md) - ✅ 核心任務完成 ⭐
+> - [**使用者指南 (user-guide.md)**](.docs/user-guide.md) - 完整使用說明 📖
+> - [**專案規劃 (plan.md)**](.docs/plan.md) - 所有設計、架構、實現計劃
 > - [架構設計 (architectrue.md)](.docs/architectrue.md) - 系統架構詳細說明
 > - [數據策略 (data-display-strategies.md)](.docs/data-display-strategies.md) - 成本分析與優化
-> - [API 實現範例 (api-implementation-example.md)](.docs/api-implementation-example.md) - 代碼範例
+
+## 🎉 Stage 1 已完成！
+
+**完成日期**: 2025-01-05  
+**狀態**: ✅ MVP 核心功能已上線
+
+### 已實現功能
+- ✅ **ENV-SETUP**: 完整環境配置、Tailwind CSS、API Key 驗證
+- ✅ **AQ-FETCH**: 即時空氣品質數據 + 24 小時 AI 預測
+- ✅ **RISK-MATRIX-MVP**: 智能活動決策系統（5 個活動模板）
+
+查看詳細完成報告: [Stage 1 完成總結](.docs/stage1-completion-summary.md)
 
 ## 📋 專案概述
 
-Skies 提供直觀的地圖介面，讓使用者能夠：
-- 🗺️ 在互動式地圖上查看即時空氣品質數據
-- 📊 監測 PM2.5、PM10、O3、NO2、SO2、CO 等污染物
-- 📈 查看空氣品質預測和歷史趨勢
-- 🔍 搜尋特定地點的空氣品質
-- ⚠️ 獲取健康建議和警示
+AeroSense 不只是空氣品質監測工具，更是您的**戶外活動智能決策助手**：
+
+### 🎯 核心功能
+1. **🗺️ 即時空氣品質地圖**
+   - 互動式地圖介面
+   - 熱力圖層顯示區域污染分布
+   - 自動定位 (GPS/IP)
+
+2. **� AI 空氣品質預測**
+   - 未來 24 小時預測
+   - 信心度評分 (高/中/低)
+   - 波動性分析
+
+3. **🎯 活動決策系統** ⭐ 新功能
+   - 5 種常見戶外活動風險評估
+   - 個人化建議與最佳時段推薦
+   - 基於污染物組成的智能評分
+
+4. **💚 健康建議**
+   - 針對不同族群的個人化建議
+   - 口罩配戴建議
+   - 症狀警示
+
+### 🌟 獨特價值
+- **即時決策**: 3 秒內完成活動風險評估
+- **科學基礎**: 基於污染物權重的硬編碼 RiskScore 算法
+- **用戶友善**: 直觀的風險燈號與卡片 UI
+- **智能推薦**: 自動尋找最佳活動時間窗口
 
 ## 🎯 核心設計
 
@@ -279,23 +314,33 @@ curl "http://localhost:3000/api/air-quality/current?lat=24.23321&lng=120.9417"
 
 ## 📊 功能路線圖
 
-### Phase 1 (MVP) - 當前階段
+### ✅ Stage 1 (MVP) - 已完成
 - [x] 基礎地圖展示
-- [ ] 當前空氣品質查詢
-- [ ] AQI 標記顯示
-- [ ] 基本搜尋功能
+- [x] 當前空氣品質查詢
+- [x] 24 小時 AI 預測
+- [x] 活動風險決策系統 (5 個模板)
+- [x] 健康建議系統
+- [x] 熱力圖層
+- [x] 快取機制
 
-### Phase 2
-- [ ] 空氣品質預測
-- [ ] 熱力圖層
-- [ ] 歷史數據查詢
-- [ ] 數據圖表
+### 🚧 Stage 1 - 待啟動 (P1 任務)
+- [ ] FINGERPRINT-VIZ - 污染物雷達圖與趨勢迷你圖
+- [ ] COMMUTE-ZONES-LITE - 網格取樣上色、路線試繪
+- [ ] ACTION-HUD - 風險等級對應行動清單與 CTA
+- [ ] DATA-OBS - 封裝 DecisionEngineL1 為獨立函式庫
 
-### Phase 3
-- [ ] 用戶帳戶系統
-- [ ] 收藏位置
-- [ ] 通知提醒
-- [ ] 社群分享
+### 💡 快速創新提案 (可插隊)
+- [ ] MICRO-COPY - 情境片語建議 (0.5 天)
+- [ ] AQ-MOOD - 動態背景漸層 (0.5 天)
+- [ ] HEALTH-TOGGLE - 健康偏好快捷鍵 (1 天)
+- [ ] FINGERPRINT-SHARE - 污染指紋分享 (1 天)
+- [ ] CAL-HOOK - 行事曆同步 (1 天)
+
+### 🔮 Stage 2 (未來規劃)
+- [ ] Agent & TEMPO 整合
+- [ ] 高解析網格
+- [ ] Decision Engine 後端化
+- [ ] 個人化自動化通知
 
 ## 🤝 貢獻
 
