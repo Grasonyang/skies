@@ -8,9 +8,12 @@ import {
 } from '@vis.gl/react-google-maps';
 import { useGeolocation } from '@/hooks/useGeolocation';
 import { useAirQuality } from '@/hooks/useAirQuality';
+import { useAirQualityForecast } from '@/hooks/useAirQualityForecast';
 import LoadingSpinner from '@/components/LoadingSpinner';
 import LocationStatus from '@/components/LocationStatus';
 import AirQualityPanel from '@/components/AirQualityPanel';
+import ForecastPanel from '@/components/ForecastPanel';
+import HealthRecommendationPanel from '@/components/HealthRecommendationPanel';
 import HeatmapLayer from '@/components/map/HeatmapLayer';
 
 const MapComponent = () => {
@@ -39,6 +42,22 @@ const MapComponent = () => {
     lng: queryLocation?.lng || 0,
     enabled: !!queryLocation,
   });
+
+  // 獲取空氣品質預測數據（創新功能 #1）
+  const {
+    data: forecastData,
+    loading: forecastLoading,
+    error: forecastError,
+  } = useAirQualityForecast({
+    lat: queryLocation?.lat || 0,
+    lng: queryLocation?.lng || 0,
+    hours: 24,
+    enabled: !!queryLocation,
+  });
+
+  // 創新功能面板的展開/收合狀態
+  const [showForecast, setShowForecast] = useState(false);
+  const [showHealthRec, setShowHealthRec] = useState(false);
 
   // 檢查 API Key
   if (!apiKey) {
@@ -151,6 +170,58 @@ const MapComponent = () => {
           />
         </div>
 
+        {/* AI 預測面板（創新點 #1） */}
+        {showForecast && (
+          <div
+            role="dialog"
+            aria-modal="true"
+            className="fixed inset-0 z-20 flex items-center justify-center bg-black/40 backdrop-blur-sm px-4"
+            onClick={() => setShowForecast(false)}
+          >
+            <div
+              className="relative w-full max-w-3xl"
+              onClick={(e) => e.stopPropagation()}
+            >
+              <button
+                onClick={() => setShowForecast(false)}
+                className="absolute -top-3 -right-3 rounded-full bg-white shadow-lg p-2 text-gray-500 hover:text-gray-800"
+                aria-label="關閉 AI 預測"
+              >
+                ✕
+              </button>
+              <ForecastPanel
+                data={forecastData}
+                loading={forecastLoading}
+                error={forecastError}
+              />
+            </div>
+          </div>
+        )}
+
+        {/* 健康建議面板（創新點 #2） */}
+        {showHealthRec && aqiData && (
+          <div
+            role="dialog"
+            aria-modal="true"
+            className="fixed inset-0 z-20 flex items-center justify-center bg-black/40 backdrop-blur-sm px-4"
+            onClick={() => setShowHealthRec(false)}
+          >
+            <div
+              className="relative w-full max-w-xl"
+              onClick={(e) => e.stopPropagation()}
+            >
+              <button
+                onClick={() => setShowHealthRec(false)}
+                className="absolute -top-3 -right-3 rounded-full bg-white shadow-lg p-2 text-gray-500 hover:text-gray-800"
+                aria-label="關閉健康建議"
+              >
+                ✕
+              </button>
+              <HealthRecommendationPanel aqiData={aqiData} />
+            </div>
+          </div>
+        )}
+
         {/* 熱力圖說明 */}
         {!aqiLoading && !aqiData && (
           <div className="absolute bottom-20 left-4 z-10">
@@ -170,11 +241,32 @@ const MapComponent = () => {
         )}
 
         {/* 底部資訊欄 */}
-        <div className="absolute bottom-4 left-1/2 transform -translate-x-1/2 z-10">
-          <div className="bg-white/90 backdrop-blur-sm px-6 py-3 rounded-full shadow-lg">
-            <p className="text-sm text-gray-700">
+        <div className="absolute bottom-4 left-1/2 transform -translate-x-1/2 z-10 w-full px-4">
+          <div className="mx-auto flex w-full max-w-3xl flex-col gap-3 rounded-2xl bg-white/90 px-5 py-3 shadow-lg backdrop-blur-sm md:flex-row md:items-center md:justify-between">
+            <p className="text-sm font-medium text-gray-700">
               📊 空氣品質監測系統 v1.0
             </p>
+            <div className="flex flex-wrap items-center gap-2">
+              <button
+                onClick={() => setShowForecast(true)}
+                className="rounded-full bg-gradient-to-r from-blue-500 to-purple-500 px-4 py-2 text-sm font-semibold text-white shadow-md transition-transform hover:scale-105 focus:outline-none focus:ring-2 focus:ring-blue-400"
+                title="查看 AI 空氣品質預測"
+              >
+                🔮 AI 預測
+              </button>
+              <button
+                onClick={() => aqiData && setShowHealthRec(true)}
+                className={`rounded-full px-4 py-2 text-sm font-semibold text-white shadow-md transition-transform focus:outline-none focus:ring-2 focus:ring-teal-400 ${
+                  aqiData
+                    ? 'bg-gradient-to-r from-green-500 to-teal-500 hover:scale-105'
+                    : 'cursor-not-allowed bg-gray-300'
+                }`}
+                title="查看個人化健康建議"
+                disabled={!aqiData}
+              >
+                � 健康建議
+              </button>
+            </div>
           </div>
         </div>
       </div>
