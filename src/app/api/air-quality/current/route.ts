@@ -58,26 +58,40 @@ export async function GET(request: NextRequest) {
 
     // 調用 Google Air Quality API
     console.log(`🌐 調用 Google API: (${lat}, ${lng})`);
-    const data = await airQualityService.getCurrentConditions(lat, lng);
+    
+    try {
+      const data = await airQualityService.getCurrentConditions(lat, lng);
 
-    if (!data) {
+      if (!data) {
+        return NextResponse.json(
+          { error: '該地區暫無空氣品質數據' },
+          { status: 404 }
+        );
+      }
+
+      // 存入快取
+      await cacheService.set(cacheKey, data);
+
+      // 返回數據
+      return NextResponse.json(data, {
+        status: 200,
+        headers: {
+          'Cache-Control': 'public, s-maxage=300, stale-while-revalidate=60',
+          'X-Cache': 'MISS',
+        },
+      });
+    } catch (apiError) {
+      console.error('❌ Google API 調用失敗:', apiError);
+      
       return NextResponse.json(
-        { error: '無法獲取空氣品質數據' },
-        { status: 500 }
+        {
+          error: '無法獲取空氣品質數據',
+          message: apiError instanceof Error ? apiError.message : '該地區可能暫無監測數據',
+          details: '請嘗試選擇其他地點或稍後再試'
+        },
+        { status: 503 }
       );
     }
-
-    // 存入快取
-    await cacheService.set(cacheKey, data);
-
-    // 返回數據
-    return NextResponse.json(data, {
-      status: 200,
-      headers: {
-        'Cache-Control': 'public, s-maxage=300, stale-while-revalidate=60',
-        'X-Cache': 'MISS',
-      },
-    });
   } catch (error) {
     console.error('❌ API 路由錯誤:', error);
 

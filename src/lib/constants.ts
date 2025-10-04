@@ -29,12 +29,12 @@ export const GRID_SIZE = {
 
 // AQI 等級顏色配置
 export const AQI_LEVELS = {
-  GOOD: { max: 50, color: '#00E400', label: '良好' },
-  MODERATE: { max: 100, color: '#FFFF00', label: '普通' },
-  UNHEALTHY_SENSITIVE: { max: 150, color: '#FF7E00', label: '對敏感族群不健康' },
-  UNHEALTHY: { max: 200, color: '#FF0000', label: '不健康' },
-  VERY_UNHEALTHY: { max: 300, color: '#8F3F97', label: '非常不健康' },
-  HAZARDOUS: { max: Infinity, color: '#7E0023', label: '危險' },
+  GOOD: { max: 50, color: '#10B981', label: '良好' },
+  MODERATE: { max: 100, color: '#F59E0B', label: '普通' },
+  UNHEALTHY_SENSITIVE: { max: 150, color: '#F97316', label: '對敏感族群不健康' },
+  UNHEALTHY: { max: 200, color: '#EF4444', label: '不健康' },
+  VERY_UNHEALTHY: { max: 300, color: '#8B5CF6', label: '非常不健康' },
+  HAZARDOUS: { max: Infinity, color: '#7C2D12', label: '危險' },
 } as const;
 
 // API 端點

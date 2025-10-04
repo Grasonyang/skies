@@ -48,12 +48,26 @@ class AirQualityService {
 
       if (!response.ok) {
         const errorText = await response.text();
+        console.error('❌ API 錯誤回應:', errorText);
         throw new Error(
-          `API 請求失敗: ${response.status} ${response.statusText} - ${errorText}`
+          `API 請求失敗: ${response.status} ${response.statusText}`
         );
       }
 
+      const contentType = response.headers.get('content-type');
+      if (!contentType || !contentType.includes('application/json')) {
+        const text = await response.text();
+        console.error('❌ 非 JSON 回應:', text);
+        throw new Error('API 回應格式錯誤');
+      }
+
       const data: AirQualityResponse = await response.json();
+
+      // 檢查數據有效性
+      if (!data || !data.indexes || data.indexes.length === 0) {
+        console.error('❌ API 回應數據無效:', data);
+        throw new Error('該地區暫無空氣品質數據');
+      }
 
       // 轉換為我們的數據格式
       return this.transformResponse(data, lat, lng);

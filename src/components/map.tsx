@@ -78,17 +78,47 @@ const MapComponent = () => {
           streetViewControl={false}
           rotateControl={false}
           fullscreenControl={true}
-          // 地圖樣式設定
+          // 地圖樣式設定 - 簡化顯示
           styles={[
+            {
+              featureType: 'road.local',
+              elementType: 'all',
+              stylers: [{ visibility: 'off' }], // 隱藏小街道
+            },
+            {
+              featureType: 'road.arterial',
+              elementType: 'labels',
+              stylers: [{ visibility: 'simplified' }], // 簡化主要道路標籤
+            },
+            {
+              featureType: 'road.highway',
+              elementType: 'labels',
+              stylers: [{ visibility: 'on' }], // 保留高速公路
+            },
             {
               featureType: 'poi',
               elementType: 'labels',
-              stylers: [{ visibility: 'on' }], // 保留重要地標
+              stylers: [{ visibility: 'off' }], // 隱藏大部分地標
+            },
+            {
+              featureType: 'poi.business',
+              elementType: 'labels',
+              stylers: [{ visibility: 'off' }], // 隱藏商店標籤
             },
             {
               featureType: 'transit',
               elementType: 'labels',
-              stylers: [{ visibility: 'simplified' }], // 簡化交通資訊
+              stylers: [{ visibility: 'off' }], // 隱藏交通站點
+            },
+            {
+              featureType: 'administrative.locality',
+              elementType: 'labels',
+              stylers: [{ visibility: 'on' }], // 保留城市名稱
+            },
+            {
+              featureType: 'administrative.province',
+              elementType: 'labels',
+              stylers: [{ visibility: 'on' }], // 保留省份名稱
             },
           ]}
           onCameraChanged={(ev: MapCameraChangedEvent) => {
