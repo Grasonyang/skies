@@ -21,7 +21,13 @@ export function calculateRiskScore(
 
   if (pollutants && pollutants.length > 0) {
     const pollutantRisk = calculatePollutantRisk(pollutants, activity);
-    finalScore = finalScore * 0.7 + pollutantRisk * 0.3;
+    const aqiWeight = Math.min(Math.max(aqi / 120, 0.3), 1);
+    finalScore = finalScore * 0.75 + pollutantRisk * 0.25 * aqiWeight;
+  }
+
+  if (aqi <= 50) {
+    // 當 AQI 處於良好區間時，限制風險分數避免過度警示
+    finalScore = Math.min(finalScore, 22);
   }
 
   finalScore = Math.max(0, Math.min(100, finalScore));
@@ -89,22 +95,30 @@ function calculatePollutantRisk(pollutants: PollutantSample[], activity: Activit
     pollutants.reduce((acc, pollutant) => {
       const weight = POLLUTANT_WEIGHTS[pollutant.code as keyof typeof POLLUTANT_WEIGHTS] || 0;
 
-      let normalized = 0.5;
+      if (weight === 0) {
+        return acc;
+      }
+
+      const value = pollutant.concentration?.value ?? 0;
+      let normalized = 0;
       switch (pollutant.code) {
         case 'pm25':
-          normalized = Math.min(pollutant.concentration.value / 75, 1);
+          normalized = Math.min(
+            value / (activity.intensity === 'high' ? 35 : 45),
+            1
+          );
           break;
         case 'pm10':
-          normalized = Math.min(pollutant.concentration.value / 150, 1);
+          normalized = Math.min(value / 80, 1);
           break;
         case 'o3':
-          normalized = Math.min(pollutant.concentration.value / 100, 1);
+          normalized = Math.min(value / 120, 1);
           if (activity.intensity === 'high') {
             normalized *= 1.3;
           }
           break;
         default:
-          normalized = 0.5;
+          normalized = Math.min(value / 100, 1);
       }
 
       return acc + weight * normalized;
