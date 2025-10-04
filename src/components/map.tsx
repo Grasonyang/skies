@@ -9,6 +9,7 @@ import {
 import { useGeolocation } from '@/hooks/useGeolocation';
 import { useAirQuality } from '@/hooks/useAirQuality';
 import { useAirQualityForecast } from '@/hooks/useAirQualityForecast';
+import { useCommuteZones, zoneColor } from '@/hooks/useCommuteZones';
 import LoadingSpinner from '@/components/LoadingSpinner';
 import LocationStatus from '@/components/LocationStatus';
 import AirQualityPanel from '@/components/AirQualityPanel';
@@ -16,6 +17,10 @@ import ForecastPanel from '@/components/ForecastPanel';
 import HealthRecommendationPanel from '@/components/HealthRecommendationPanel';
 import RiskMatrixPanel from '@/components/RiskMatrixPanel';
 import HeatmapLayer from '@/components/map/HeatmapLayer';
+import CommuteZonesLayer from '@/components/map/CommuteZonesLayer';
+import PollutantFingerprintPanel from '@/components/PollutantFingerprintPanel';
+import ActionHUDPanel from '@/components/ActionHUDPanel';
+import FeedbackConsole from '@/components/FeedbackConsole';
 
 const MapComponent = () => {
   const apiKey = process.env.NEXT_PUBLIC_GOOGLE_MAPS_API_KEY;
@@ -60,6 +65,11 @@ const MapComponent = () => {
   const [showForecast, setShowForecast] = useState(false);
   const [showHealthRec, setShowHealthRec] = useState(false);
   const [showRiskMatrix, setShowRiskMatrix] = useState(false);
+  const [showFingerprint, setShowFingerprint] = useState(false);
+  const [showActionHud, setShowActionHud] = useState(false);
+  const [showFeedback, setShowFeedback] = useState(false);
+
+  const commuteZones = useCommuteZones({ location, aqiData });
 
   // 檢查 API Key
   if (!apiKey) {
@@ -154,14 +164,39 @@ const MapComponent = () => {
         >
           {/* 熱力圖層 - 降低透明度 */}
           <HeatmapLayer opacity={0.45} />
+          {commuteZones.length > 0 && <CommuteZonesLayer zones={commuteZones} />}
         </Map>
 
         {/* 位置狀態顯示 */}
-        {location && (
-          <div className="absolute top-4 left-4 z-10">
-            <LocationStatus location={location} />
-          </div>
-        )}
+        <div className="absolute top-4 left-4 z-10 space-y-3">
+          {location && <LocationStatus location={location} />}
+          {commuteZones.length > 0 && (
+            <div className="bg-white/90 backdrop-blur-md px-4 py-3 rounded-2xl shadow-lg text-xs text-slate-600 border border-slate-100 w-64">
+              <p className="font-semibold text-slate-700 mb-2">🚇 通勤區速寫</p>
+              <ul className="space-y-1">
+                {commuteZones.map((zone) => (
+                  <li key={zone.id} className="flex items-center justify-between">
+                    <span className="flex items-center gap-2">
+                      <span
+                        className="w-3 h-3 rounded-full"
+                        style={{ backgroundColor: `${zoneColor(zone.level)}AA` }}
+                      ></span>
+                      {zone.level === 'safe'
+                        ? '安全'
+                        : zone.level === 'caution'
+                        ? '警示'
+                        : '危險'}
+                    </span>
+                    <span className="font-semibold text-slate-700">AQI {Math.round(zone.averageAqi)}</span>
+                  </li>
+                ))}
+              </ul>
+              <p className="text-[10px] text-slate-400 mt-2">
+                每 10 分鐘更新，採樣目前站點推估並預留 TEMPO 快取。
+              </p>
+            </div>
+          )}
+        </div>
 
         {/* 空氣品質面板 */}
         <div className="absolute top-4 right-4 z-10">
@@ -252,6 +287,58 @@ const MapComponent = () => {
           </div>
         )}
 
+        {/* 污染指紋面板 */}
+        {showFingerprint && (
+          <div
+            role="dialog"
+            aria-modal="true"
+            className="fixed inset-0 z-30 flex items-center justify-center bg-black/50 backdrop-blur-sm px-4"
+            onClick={() => setShowFingerprint(false)}
+          >
+            <div className="relative" onClick={(event) => event.stopPropagation()}>
+              <button
+                onClick={() => setShowFingerprint(false)}
+                className="absolute -top-3 -right-3 rounded-full bg-white shadow-lg p-2 text-gray-500 hover:text-gray-800"
+                aria-label="關閉污染指紋"
+              >
+                ✕
+              </button>
+              <PollutantFingerprintPanel
+                currentData={aqiData}
+                forecastData={forecastData}
+                loading={forecastLoading}
+                error={forecastError}
+              />
+            </div>
+          </div>
+        )}
+
+        {/* 行動 HUD 面板 */}
+        {showActionHud && (
+          <div
+            role="dialog"
+            aria-modal="true"
+            className="fixed inset-0 z-30 flex items-center justify-center bg-black/40 backdrop-blur-sm px-4"
+            onClick={() => setShowActionHud(false)}
+          >
+            <div className="relative" onClick={(event) => event.stopPropagation()}>
+              <button
+                onClick={() => setShowActionHud(false)}
+                className="absolute -top-3 -right-3 rounded-full bg-white shadow-lg p-2 text-gray-500 hover:text-gray-800"
+                aria-label="關閉行動 HUD"
+              >
+                ✕
+              </button>
+              <ActionHUDPanel
+                aqiData={aqiData}
+                forecastData={forecastData}
+                loading={aqiLoading || forecastLoading}
+                onFeedback={() => setShowFeedback(true)}
+              />
+            </div>
+          </div>
+        )}
+
         {/* 熱力圖說明 */}
         {!aqiLoading && !aqiData && (
           <div className="absolute bottom-20 left-4 z-10">
@@ -285,10 +372,34 @@ const MapComponent = () => {
                 🔮 AI 預測
               </button>
               <button
-                onClick={() => aqiData && setShowRiskMatrix(true)}
+                onClick={() => aqiData && setShowFingerprint(true)}
+                className={`rounded-full px-4 py-2 text-sm font-semibold text-white shadow-md transition-transform focus:outline-none focus:ring-2 focus:ring-amber-400 ${
+                  aqiData
+                    ? 'bg-gradient-to-r from-amber-500 to-orange-500 hover:scale-105'
+                    : 'cursor-not-allowed bg-gray-300'
+                }`}
+                title="查看污染類型指紋"
+                disabled={!aqiData}
+              >
+                🧬 污染指紋
+              </button>
+              <button
+                onClick={() => aqiData && setShowActionHud(true)}
                 className={`rounded-full px-4 py-2 text-sm font-semibold text-white shadow-md transition-transform focus:outline-none focus:ring-2 focus:ring-indigo-400 ${
                   aqiData
                     ? 'bg-gradient-to-r from-indigo-500 to-pink-500 hover:scale-105'
+                    : 'cursor-not-allowed bg-gray-300'
+                }`}
+                title="查看行動風險 HUD"
+                disabled={!aqiData}
+              >
+                ⚡ 行動 HUD
+              </button>
+              <button
+                onClick={() => aqiData && setShowRiskMatrix(true)}
+                className={`rounded-full px-4 py-2 text-sm font-semibold text-white shadow-md transition-transform focus:outline-none focus:ring-2 focus:ring-indigo-400 ${
+                  aqiData
+                    ? 'bg-gradient-to-r from-fuchsia-500 to-rose-500 hover:scale-105'
                     : 'cursor-not-allowed bg-gray-300'
                 }`}
                 title="查看活動決策系統"
@@ -311,6 +422,8 @@ const MapComponent = () => {
             </div>
           </div>
         </div>
+
+        <FeedbackConsole isOpen={showFeedback} onClose={() => setShowFeedback(false)} />
       </div>
     </APIProvider>
   );
