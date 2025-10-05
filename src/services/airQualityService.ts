@@ -1,22 +1,28 @@
-import { AirQualityResponse, AQIData } from '@/types';
+import { AQIData } from '@/types';
 import { ForecastResponse } from '@/types/forecast';
 import { cacheService } from './cacheService';
 import { getCacheKey } from '@/lib/utils';
+
+// Helper to construct the base URL for API calls
+const getBaseUrl = () => {
+  if (process.env.VERCEL_URL) {
+    return `https://${process.env.VERCEL_URL}`;
+  }
+  return 'http://localhost:3000';
+};
+
 
 /**
  * Google Air Quality API 服務
  */
 class AirQualityService {
-  private apiKey: string;
-  private baseUrl = 'https://airquality.googleapis.com/v1';
   private useMockData: boolean;
 
   constructor() {
-    this.apiKey = process.env.GOOGLE_API_KEY || '';
-    this.useMockData = !this.apiKey;
+    this.useMockData = !process.env.GOOGLE_MAPS_API_KEY;
 
     if (this.useMockData) {
-      console.warn('⚠️ GOOGLE_API_KEY 未設定，將改用模擬的空氣品質數據');
+      console.warn('⚠️ GOOGLE_MAPS_API_KEY 未設定，將改用模擬的空氣品質數據');
     }
   }
 
@@ -26,87 +32,22 @@ class AirQualityService {
   async getCurrentConditions(
     lat: number,
     lng: number,
-    retries: number = 2
   ): Promise<AQIData | null> {
     if (this.useMockData) {
       return this.generateMockConditions(lat, lng);
     }
 
     try {
-      const url = `${this.baseUrl}/currentConditions:lookup?key=${this.apiKey}`;
-
-      const controller = new AbortController();
-      const timeoutId = setTimeout(() => controller.abort(), 30000); // 增加到 30 秒
-
-      try {
-        const response = await fetch(url, {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-          },
-          body: JSON.stringify({
-            location: {
-              latitude: lat,
-              longitude: lng,
-            },
-            // 請求所有支援的污染物數據
-            extraComputations: [
-              'HEALTH_RECOMMENDATIONS',
-              'DOMINANT_POLLUTANT_CONCENTRATION',
-              'POLLUTANT_CONCENTRATION',
-              'POLLUTANT_ADDITIONAL_INFO',
-              'LOCAL_AQI',
-            ],
-            languageCode: 'zh-TW',
-          }),
-          signal: controller.signal,
-        });
-
-        clearTimeout(timeoutId);
-
-        if (!response.ok) {
-          const errorText = await response.text();
-          console.error('❌ API 錯誤回應:', errorText);
-          throw new Error(
-            `API 請求失敗: ${response.status} ${response.statusText}`
-          );
+        const baseUrl = getBaseUrl();
+        const response = await fetch(`${baseUrl}/api/air-quality/current?lat=${lat}&lng=${lng}`);
+        if(!response.ok) {
+            return null;
         }
 
-        const contentType = response.headers.get('content-type');
-        if (!contentType || !contentType.includes('application/json')) {
-          const text = await response.text();
-          console.error('❌ 非 JSON 回應:', text);
-          throw new Error('API 回應格式錯誤');
-        }
+        const data = await response.json();
+        return data;
 
-        const data: AirQualityResponse = await response.json();
-
-        // 檢查數據有效性
-        if (!data || !data.indexes || data.indexes.length === 0) {
-          console.error('❌ API 回應數據無效:', data);
-          throw new Error('該地區暫無空氣品質數據');
-        }
-
-        // 轉換為我們的數據格式
-        return this.transformResponse(data, lat, lng);
-      } catch (fetchError) {
-        clearTimeout(timeoutId);
-        throw fetchError;
-      }
     } catch (error) {
-      // 如果是連線超時或網路錯誤，嘗試重試
-      if (retries > 0 && (
-        error instanceof Error && (
-          error.name === 'AbortError' ||
-          error.message.includes('fetch failed') ||
-          error.message.includes('timeout')
-        )
-      )) {
-        console.warn(`⚠️ 請求失敗，剩餘重試次數: ${retries}，正在重試...`);
-        await new Promise(resolve => setTimeout(resolve, 1000)); // 等待 1 秒
-        return this.getCurrentConditions(lat, lng, retries - 1);
-      }
-
       console.error('❌ 獲取空氣品質數據失敗:', error);
       if (error instanceof Error) {
         console.error('錯誤詳情:', error.message);
@@ -197,45 +138,6 @@ class AirQualityService {
   private hashCoordinates(lat: number, lng: number): number {
     const raw = Math.sin(lat * 12.9898 + lng * 78.233) * 43758.5453;
     return raw - Math.floor(raw);
-  }
-
-  /**
-   * 轉換 API 回應為內部數據格式
-   */
-  private transformResponse(
-    response: AirQualityResponse,
-    lat: number,
-    lng: number
-  ): AQIData {
-    // 使用 Universal AQI
-    const universalAQI = response.indexes?.find((idx) => idx.code === 'uaqi');
-
-    if (!universalAQI) {
-      throw new Error('API 回應中缺少 AQI 數據');
-    }
-
-    return {
-      aqi: universalAQI.aqi,
-      category: universalAQI.category,
-      dominantPollutant: universalAQI.dominantPollutant,
-      pollutants: response.pollutants?.map((p) => ({
-        code: p.code,
-        displayName: p.displayName,
-        fullName: p.fullName,
-        concentration: p.concentration,
-        additionalInfo: p.additionalInfo,
-      })),
-      timestamp: response.dateTime,
-      location: { lat, lng },
-      indexes: [
-        {
-          code: universalAQI.code,
-          aqi: universalAQI.aqi,
-          category: universalAQI.category,
-          dominantPollutant: universalAQI.dominantPollutant,
-        },
-      ],
-    };
   }
 
   private simulateForecast(current: AQIData, hours: number): ForecastResponse {

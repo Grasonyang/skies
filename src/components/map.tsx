@@ -189,7 +189,7 @@ const FEATURE_CONFIGS: FeatureConfig[] = [
 ];
 
 const MapComponent = () => {
-  const apiKey = process.env.NEXT_PUBLIC_GOOGLE_MAPS_API_KEY;
+  const apiKey = process.env.GOOGLE_MAPS_API_KEY;
   const mapId = process.env.NEXT_PUBLIC_GOOGLE_MAP_ID;
   const { location, loading, error, suggestedZoom } = useGeolocation();
   const [mapCenter, setMapCenter] = useState<{ lat: number; lng: number } | null>(null);
@@ -425,7 +425,7 @@ const MapComponent = () => {
           <p className="text-gray-700">
             Google Maps API key 未設定。請在環境變數中設定{' '}
             <code className="bg-gray-100 px-2 py-1 rounded text-sm">
-              NEXT_PUBLIC_GOOGLE_MAPS_API_KEY
+              GOOGLE_MAPS_API_KEY
             </code>
           </p>
         </div>

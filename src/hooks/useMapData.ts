@@ -29,6 +29,7 @@ export interface PeakPollutionEvent {
 export interface ReverseGeocodeResult {
   city?: string;
   district?: string;
+
   country?: string;
   formattedAddress?: string;
 }
@@ -161,7 +162,7 @@ export function useMapData({
       const res = await fetch(`/api/places/geocode?${params.toString()}`);
 
       if (!res.ok) {
-        const err = await res.json().catch(() => ({} as any));
+        const err = await res.json().catch(() => ({} as { error?: string }));
         throw new Error(err.error || '地理資訊取得失敗');
       }
 

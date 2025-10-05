@@ -1,48 +1,13 @@
 import { CommuteRequestBody, CommuteRouteSummary } from '@/types/commute';
-import { decodePolyline, encodePolyline } from '@/lib/polyline';
+import { encodePolyline } from '@/lib/polyline';
 import { calculateDistance } from '@/lib/utils';
 
-interface DistanceMatrixResponse {
-  status: string;
-  rows: Array<{
-    elements: Array<{
-      status: string;
-      duration: { text: string; value: number };
-      distance: { text: string; value: number };
-      duration_in_traffic?: { text: string; value: number };
-    }>;
-  }>;
-  error_message?: string;
-}
-
-interface DirectionsResponse {
-  routes: Array<{
-    summary: string;
-    warnings: string[];
-    legs: Array<{
-      distance: { text: string; value: number };
-      duration: { text: string; value: number };
-      end_address: string;
-      start_address: string;
-      steps: Array<{
-        polyline: { points: string };
-      }>;
-    }>;
-    overview_polyline: { points: string };
-  }>;
-  status: string;
-  error_message?: string;
-}
 
 class RoutesService {
-  private directionsEndpoint = 'https://maps.googleapis.com/maps/api/directions/json';
-  private distanceMatrixEndpoint = 'https://maps.googleapis.com/maps/api/distancematrix/json';
-  private apiKey: string;
   private useMockData: boolean;
 
   constructor() {
-    this.apiKey = process.env.GOOGLE_API_KEY || '';
-    this.useMockData = !this.apiKey;
+    this.useMockData = !process.env.GOOGLE_API_KEY;
 
     if (this.useMockData) {
       console.warn('⚠️ GOOGLE_API_KEY 未設定，通勤路線將使用模擬數據');
@@ -60,78 +25,25 @@ class RoutesService {
         this.generateMockRoutes({ origin, destination, mode, alternatives })
       );
     }
-
-    const params = new URLSearchParams({
-      origin: `${origin.lat},${origin.lng}`,
-      destination: `${destination.lat},${destination.lng}`,
-      mode,
-      key: this.apiKey,
-      alternatives: alternatives > 0 ? 'true' : 'false',
-    });
-
-    if (mode === 'driving' || mode === 'transit') {
-      params.set('departure_time', 'now');
-    }
-
-    const directionsRes = await fetch(
-      `${this.directionsEndpoint}?${params.toString()}`,
-      {
+    const response = await fetch('/api/routes/commute', {
+        method: 'POST',
         headers: {
           'Content-Type': 'application/json',
         },
+        body: JSON.stringify({
+          origin,
+          destination,
+          mode,
+          alternatives,
+        }),
+      });
+
+      if (!response.ok) {
+        throw new Error(`Commute API 請求失敗: ${response.status}`);
       }
-    );
 
-    if (!directionsRes.ok) {
-      const message = await directionsRes.text();
-      throw new Error(`Directions API 請求失敗: ${directionsRes.status} ${message}`);
-    }
-
-    const directionsData: DirectionsResponse = await directionsRes.json();
-
-    if (directionsData.status !== 'OK') {
-      throw new Error(
-        `Directions API 回應異常: ${directionsData.status} ${directionsData.error_message ?? ''}`
-      );
-    }
-
-    const matrixElement = await this.getDistanceMatrix({ origin, destination, mode });
-
-    return directionsData.routes.map((route, index) => {
-      const legs = route.legs.map((leg) => ({
-        distance: leg.distance,
-        duration: leg.duration,
-        endAddress: leg.end_address,
-        startAddress: leg.start_address,
-        polyline: leg.steps.map((step) => step.polyline.points).join(''),
-        points: leg.steps
-          .flatMap((step) => decodePolyline(step.polyline.points))
-          .filter((point, pointIndex, arr) => {
-            if (pointIndex === 0) return true;
-            const prev = arr[pointIndex - 1];
-            return !(prev.lat === point.lat && prev.lng === point.lng);
-          }),
-      }));
-
-      const overviewPath = decodePolyline(route.overview_polyline.points);
-      const totalDistance = legs.reduce((sum, leg) => sum + leg.distance.value, 0);
-      const totalDuration = legs.reduce((sum, leg) => sum + leg.duration.value, 0);
-
-      return {
-        id: `route-${index}`,
-        mode,
-        warnings: route.warnings ?? [],
-        distanceText: metersToText(totalDistance),
-        distanceValue: totalDistance,
-        durationText: secondsToText(totalDuration),
-        durationValue: totalDuration,
-        legs,
-        overviewPolyline: route.overview_polyline.points,
-        overviewPath,
-        durationInTrafficText: matrixElement?.durationInTrafficText ?? null,
-        durationInTrafficValue: matrixElement?.durationInTrafficValue ?? null,
-      };
-    });
+      const data = await response.json();
+      return data.routes.map((route: { summary: CommuteRouteSummary }) => route.summary);
   }
 
   private generateMockRoutes({
@@ -257,57 +169,6 @@ class RoutesService {
         : null;
 
     return { durationSeconds, durationInTrafficSeconds: trafficSeconds };
-  }
-
-  private async getDistanceMatrix({
-    origin,
-    destination,
-    mode = 'driving',
-  }: CommuteRequestBody): Promise<
-    | {
-        durationInTrafficText: string;
-        durationInTrafficValue: number;
-      }
-    | null
-  > {
-    const params = new URLSearchParams({
-      origins: `${origin.lat},${origin.lng}`,
-      destinations: `${destination.lat},${destination.lng}`,
-      key: this.apiKey,
-      mode,
-    });
-
-    if (mode === 'driving' || mode === 'transit') {
-      params.set('departure_time', 'now');
-    }
-
-    try {
-      const res = await fetch(`${this.distanceMatrixEndpoint}?${params.toString()}`);
-
-      if (!res.ok) {
-        return null;
-      }
-
-      const data: DistanceMatrixResponse = await res.json();
-      if (data.status !== 'OK') {
-        return null;
-      }
-
-      const element = data.rows?.[0]?.elements?.[0];
-      if (!element || element.status !== 'OK') {
-        return null;
-      }
-
-      const duration = element.duration_in_traffic ?? element.duration;
-
-      return {
-        durationInTrafficText: duration.text,
-        durationInTrafficValue: duration.value,
-      };
-    } catch (error) {
-      console.error('Distance Matrix API 調用失敗', error);
-      return null;
-    }
   }
 }
 

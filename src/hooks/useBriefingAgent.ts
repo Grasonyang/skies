@@ -97,7 +97,7 @@ export function useBriefingAgent({
       });
 
       if (!response.ok) {
-        const err = await response.json().catch(() => ({} as any));
+        const err = await response.json().catch(() => ({} as { error?: string }));
         throw new Error(err.error || '無法取得多級摘要');
       }
 

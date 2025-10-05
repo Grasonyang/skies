@@ -17,7 +17,7 @@ export default function HeatmapLayer({ opacity = HEATMAP_CONFIG.opacity }: Heatm
   useEffect(() => {
     if (!map) return;
 
-    const apiKey = process.env.NEXT_PUBLIC_GOOGLE_MAPS_API_KEY;
+    const apiKey = process.env.GOOGLE_MAPS_API_KEY;
     if (!apiKey) {
       console.error('❌ 缺少 Google Maps API Key');
       return;

@@ -1,5 +1,4 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { routesService } from '@/services/routesService';
 import { airQualityService } from '@/services/airQualityService';
 import { cacheService } from '@/services/cacheService';
 import { samplePath } from '@/lib/polyline';
@@ -8,14 +7,209 @@ import {
   CommuteGuardianResponse,
   CommuteGuardianRoute,
   CommuteRequestBody,
+  CommuteRouteSummary,
 } from '@/types/commute';
 import { isValidCoordinate } from '@/lib/utils';
+import { decodePolyline } from '@/lib/polyline';
 
 export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
 
+const GOOGLE_MAPS_API_KEY = process.env.GOOGLE_MAPS_API_KEY;
+const DIRECTIONS_API_URL = 'https://maps.googleapis.com/maps/api/directions/json';
+const DISTANCE_MATRIX_API_URL = 'https://maps.googleapis.com/maps/api/distancematrix/json';
+
+
+interface DistanceMatrixResponse {
+    status: string;
+    rows: Array<{
+      elements: Array<{
+        status: string;
+        duration: { text: string; value: number };
+        distance: { text: string; value: number };
+        duration_in_traffic?: { text: string; value: number };
+      }>;
+    }>;
+    error_message?: string;
+  }
+
+  interface DirectionsResponse {
+    routes: Array<{
+      summary: string;
+      warnings: string[];
+      legs: Array<{
+        distance: { text: string; value: number };
+        duration: { text: string; value: number };
+        end_address: string;
+        start_address: string;
+        steps: Array<{
+          polyline: { points: string };
+        }>;
+      }>;
+      overview_polyline: { points: string };
+    }>;
+    status: string;
+    error_message?: string;
+  }
+
+  function metersToText(meters: number): string {
+    if (meters < 1000) {
+      return `${Math.round(meters)} 公尺`;
+    }
+    return `${(meters / 1000).toFixed(1)} 公里`;
+  }
+
+  function secondsToText(seconds: number): string {
+    const minutes = Math.round(seconds / 60);
+    if (minutes < 60) {
+      return `${minutes} 分鐘`;
+    }
+    const hours = Math.floor(minutes / 60);
+    const remaining = minutes % 60;
+    return remaining ? `${hours} 小時 ${remaining} 分` : `${hours} 小時`;
+  }
+
+
+async function getCommuteRoutes({
+    origin,
+    destination,
+    mode = 'driving',
+    alternatives = 1,
+  }: CommuteRequestBody): Promise<CommuteRouteSummary[]> {
+
+    const params = new URLSearchParams({
+      origin: `${origin.lat},${origin.lng}`,
+      destination: `${destination.lat},${destination.lng}`,
+      mode,
+      key: GOOGLE_MAPS_API_KEY!,
+      alternatives: alternatives > 0 ? 'true' : 'false',
+    });
+
+    if (mode === 'driving' || mode === 'transit') {
+      params.set('departure_time', 'now');
+    }
+
+    const directionsRes = await fetch(
+      `${DIRECTIONS_API_URL}?${params.toString()}`,
+      {
+        headers: {
+          'Content-Type': 'application/json',
+        },
+      }
+    );
+
+    if (!directionsRes.ok) {
+      const message = await directionsRes.text();
+      throw new Error(`Directions API 請求失敗: ${directionsRes.status} ${message}`);
+    }
+
+    const directionsData: DirectionsResponse = await directionsRes.json();
+
+    if (directionsData.status !== 'OK') {
+      throw new Error(
+        `Directions API 回應異常: ${directionsData.status} ${directionsData.error_message ?? ''}`
+      );
+    }
+
+    const matrixElement = await getDistanceMatrix({ origin, destination, mode });
+
+    return directionsData.routes.map((route, index) => {
+      const legs = route.legs.map((leg) => ({
+        distance: leg.distance,
+        duration: leg.duration,
+        endAddress: leg.end_address,
+        startAddress: leg.start_address,
+        polyline: leg.steps.map((step) => step.polyline.points).join(''),
+        points: leg.steps
+          .flatMap((step) => decodePolyline(step.polyline.points))
+          .filter((point, pointIndex, arr) => {
+            if (pointIndex === 0) return true;
+            const prev = arr[pointIndex - 1];
+            return !(prev.lat === point.lat && prev.lng === point.lng);
+          }),
+      }));
+
+      const overviewPath = decodePolyline(route.overview_polyline.points);
+      const totalDistance = legs.reduce((sum, leg) => sum + leg.distance.value, 0);
+      const totalDuration = legs.reduce((sum, leg) => sum + leg.duration.value, 0);
+
+      return {
+        id: `route-${index}`,
+        mode,
+        warnings: route.warnings ?? [],
+        distanceText: metersToText(totalDistance),
+        distanceValue: totalDistance,
+        durationText: secondsToText(totalDuration),
+        durationValue: totalDuration,
+        legs,
+        overviewPolyline: route.overview_polyline.points,
+        overviewPath,
+        durationInTrafficText: matrixElement?.durationInTrafficText ?? null,
+        durationInTrafficValue: matrixElement?.durationInTrafficValue ?? null,
+      };
+    });
+  }
+
+  async function getDistanceMatrix({
+    origin,
+    destination,
+    mode = 'driving',
+  }: CommuteRequestBody): Promise<
+    | {
+        durationInTrafficText: string;
+        durationInTrafficValue: number;
+      }
+    | null
+  > {
+    const params = new URLSearchParams({
+      origins: `${origin.lat},${origin.lng}`,
+      destinations: `${destination.lat},${destination.lng}`,
+      key: GOOGLE_MAPS_API_KEY!,
+      mode,
+    });
+
+    if (mode === 'driving' || mode === 'transit') {
+      params.set('departure_time', 'now');
+    }
+
+    try {
+      const res = await fetch(`${DISTANCE_MATRIX_API_URL}?${params.toString()}`);
+
+      if (!res.ok) {
+        return null;
+      }
+
+      const data: DistanceMatrixResponse = await res.json();
+      if (data.status !== 'OK') {
+        return null;
+      }
+
+      const element = data.rows?.[0]?.elements?.[0];
+      if (!element || element.status !== 'OK') {
+        return null;
+      }
+
+      const duration = element.duration_in_traffic ?? element.duration;
+
+      return {
+        durationInTrafficText: duration.text,
+        durationInTrafficValue: duration.value,
+      };
+    } catch (error) {
+      console.error('Distance Matrix API 調用失敗', error);
+      return null;
+    }
+  }
+
+
 export async function POST(request: NextRequest) {
   try {
+    if (!GOOGLE_MAPS_API_KEY) {
+        return NextResponse.json(
+            { error: 'GOOGLE_MAPS_API_KEY 未設定' },
+            { status: 500 }
+        );
+    }
     const body = (await request.json()) as CommuteRequestBody;
 
     if (!body?.origin || !body?.destination) {
@@ -45,7 +239,7 @@ export async function POST(request: NextRequest) {
       });
     }
 
-    const summaries = await routesService.getCommuteRoutes({
+    const summaries = await getCommuteRoutes({
       origin: body.origin,
       destination: body.destination,
       mode: body.mode ?? 'driving',

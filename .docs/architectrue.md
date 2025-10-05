@@ -1104,7 +1104,7 @@ export function withRateLimit(handler: Function) {
 
 ```bash
 # .env.local (本地開發環境)
-NEXT_PUBLIC_GOOGLE_MAPS_API_KEY=your_maps_api_key_here
+GOOGLE_MAPS_API_KEY=your_maps_api_key_here
 GOOGLE_AIR_QUALITY_API_KEY=your_air_quality_api_key_here
 NODE_ENV=development
 
@@ -1115,7 +1115,7 @@ REDIS_URL=redis://localhost:6379
 ```bash
 # .env.example (提供給團隊參考)
 # Google Maps API Key (公開在前端)
-NEXT_PUBLIC_GOOGLE_MAPS_API_KEY=
+GOOGLE_MAPS_API_KEY=
 
 # Google Air Quality API Key (僅伺服器端使用，不公開)
 GOOGLE_AIR_QUALITY_API_KEY=
@@ -1379,14 +1379,14 @@ export interface HistoricalData {
 
 **開發環境**:
 ```
-NEXT_PUBLIC_GOOGLE_MAPS_API_KEY=your_dev_key
+GOOGLE_MAPS_API_KEY=your_dev_key
 GOOGLE_AIR_QUALITY_API_KEY=your_dev_key
 NODE_ENV=development
 ```
 
 **生產環境**:
 ```
-NEXT_PUBLIC_GOOGLE_MAPS_API_KEY=your_prod_key
+GOOGLE_MAPS_API_KEY=your_prod_key
 GOOGLE_AIR_QUALITY_API_KEY=your_prod_key
 NODE_ENV=production
 REDIS_URL=your_redis_url (可選)

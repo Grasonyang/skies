@@ -24,7 +24,7 @@ const USER_GROUP_OPTIONS = [
 
 /**
  * 健康建議面板組件
- * 
+ *
  * 提供基於用戶族群的個人化健康建議
  */
 const HealthRecommendationPanel: React.FC<HealthRecommendationPanelProps> = ({ aqiData, className }) => {
@@ -104,7 +104,7 @@ const HealthRecommendationPanel: React.FC<HealthRecommendationPanelProps> = ({ a
         </div>
         <div className="bg-gray-50 p-3 rounded-lg">
           <div className="text-xs text-gray-600 mb-1">😷 口罩配戴</div>
-          <div className="text-sm font-medium text-gray-800">{recommendation.activities.mask}</div>
+          <div className="text-sm font-medium text-gray-800">{maskRec.level}</div>
         </div>
         <div className="bg-gray-50 p-3 rounded-lg">
           <div className="text-xs text-gray-600 mb-1">🪟 開窗建議</div>

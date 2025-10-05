@@ -2,15 +2,19 @@
   "name": "out",
   "version": "0.1.0",
   "private": true,
+  "type": "module",
   "scripts": {
     "dev": "next dev --turbopack",
-    "build": "next build --turbopack",
+    "build": "next build",
     "start": "next start",
     "lint": "next lint",
-    "test": "vitest run"
+    "test": "vitest run",
+    "types": "tsc --noEmit"
   },
   "dependencies": {
     "@doist/todoist-ai": "^4.9.3",
+    "@google/genai": "^1.22.0",
+    "@google/generative-ai": "^0.24.1",
     "@googlemaps/markerclusterer": "^2.6.2",
     "@vis.gl/react-google-maps": "^1.5.5",
     "next": "15.5.4",

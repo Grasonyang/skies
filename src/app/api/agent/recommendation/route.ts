@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
+import { GoogleGenerativeAI } from '@google/generative-ai';
 
 export const runtime = 'nodejs';
 
@@ -38,12 +39,11 @@ export async function POST(request: NextRequest) {
     }
 
     // 檢查是否設定了 Vertex AI 相關環境變數
-    const projectId = process.env.GOOGLE_CLOUD_PROJECT_ID;
     const apiKey = process.env.GOOGLE_API_KEY;
 
     // 如果沒有設定 Vertex AI，使用 fallback 模板
-    if (!projectId || !apiKey) {
-      console.warn('⚠️ Vertex AI 未設定，使用 fallback 模板');
+    if (!apiKey) {
+      console.warn('⚠️ Gemini API Key 未設定，使用 fallback 模板');
       const fallbackRecommendation = generateFallbackRecommendation(activity, scenario);
       return NextResponse.json({
         recommendation: fallbackRecommendation,
@@ -55,58 +55,18 @@ export async function POST(request: NextRequest) {
     // 建立 prompt
     const prompt = createPrompt(activity, scenario, userProfile);
 
-    // 呼叫 Gemini API
-    const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${apiKey}`;
+    // 初始化 GoogleGenerativeAI
+    const genAI = new GoogleGenerativeAI(apiKey);
+    const model = genAI.getGenerativeModel({ model: "gemini-1.5-flash" });
 
-    const requestBody = {
-      contents: [
-        {
-          parts: [
-            {
-              text: prompt,
-            },
-          ],
-        },
-      ],
-      generationConfig: {
-        temperature: 0.7,
-        topK: 40,
-        topP: 0.95,
-        maxOutputTokens: 500,
-      },
-    };
-
-    const response = await fetch(url, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify(requestBody),
-    });
-
-    if (!response.ok) {
-      const errorText = await response.text();
-      console.error('❌ Gemini API 錯誤:', errorText);
-      
-      // API 失敗時使用 fallback
-      const fallbackRecommendation = generateFallbackRecommendation(activity, scenario);
-      return NextResponse.json({
-        recommendation: fallbackRecommendation,
-        source: 'fallback',
-        confidence: 0.75,
-        error: 'API request failed, using fallback',
-      });
-    }
-
-    const data = await response.json();
-    const recommendation = data.candidates?.[0]?.content?.parts?.[0]?.text || 
-                          generateFallbackRecommendation(activity, scenario);
+    const result = await model.generateContent(prompt);
+    const response = await result.response;
+    const recommendation = response.text();
 
     return NextResponse.json({
       recommendation: recommendation.trim(),
       source: 'gemini',
       confidence: 0.9,
-      tokens: data.usageMetadata,
     });
 
   } catch (error) {

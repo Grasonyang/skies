@@ -1,10 +1,10 @@
 import { NextRequest, NextResponse } from 'next/server';
-import OpenAI from 'openai';
+import { GoogleGenerativeAI } from '@google/generative-ai';
 
-const DEFAULT_MODEL = process.env.OPENAI_BRIEFING_MODEL || 'gpt-4o-mini';
+const DEFAULT_MODEL = process.env.GOOGLE_BRIEFING_MODEL || 'gemini-1.5-flash';
 
-const client = process.env.OPENAI_API_KEY
-  ? new OpenAI({ apiKey: process.env.OPENAI_API_KEY })
+const genAI = process.env.GOOGLE_GEMINI_API_KEY
+  ? new GoogleGenerativeAI(process.env.GOOGLE_GEMINI_API_KEY)
   : null;
 
 interface BriefingLevelPayload {
@@ -19,8 +19,8 @@ interface BriefingAgentPayload {
   level3: BriefingLevelPayload;
 }
 
-function buildPrompt(context: any) {
-  return `你是一位空氣品質資料分析師，善於將 NASA EarthData 與衛星資料轉換成多層次的溝通素材。
+function buildPrompt(context: Record<string, unknown>) {
+  return `你是一位 NASA EarthData 專案的資料分析師，擅長將複雜數據轉譯給不同受眾。
 
 [任務]
 請根據提供的 JSON Context，輸出一份 JSON 物件，包含三個層級的摘要：
@@ -34,8 +34,8 @@ ${JSON.stringify(context, null, 2)}
 [輸出格式]
 {
   "level1": {"title": "", "body": "", "callToAction": ""},
-  "level2": {...},
-  "level3": {...}
+  "level2": {"title": "", "body": "", "callToAction": ""},
+  "level3": {"title": "", "body": "", "callToAction": ""}
 }
 
 [語氣要求]
@@ -48,9 +48,9 @@ ${JSON.stringify(context, null, 2)}
 }
 
 export async function POST(request: NextRequest) {
-  if (!client) {
+  if (!genAI) {
     return NextResponse.json(
-      { error: 'OPENAI_API_KEY 未設定，無法生成多級別摘要' },
+      { error: 'GOOGLE_GEMINI_API_KEY 未設定，無法生成多級別摘要' },
       { status: 500 }
     );
   }
@@ -68,25 +68,16 @@ export async function POST(request: NextRequest) {
 
     const prompt = buildPrompt(context);
 
-    const completion = await client.chat.completions.create({
-      model: DEFAULT_MODEL,
-      temperature: 0.2,
-      response_format: { type: 'json_object' as const },
-      max_tokens: 600,
-      messages: [
-        {
-          role: 'system',
-          content:
-            '你是一位 NASA EarthData 專案的資料分析師，擅長將複雜數據轉譯給不同受眾。所有輸出請使用 JSON、繁體中文。',
+    const model = genAI.getGenerativeModel({
+        model: DEFAULT_MODEL,
+        generationConfig: {
+            responseMimeType: "application/json",
         },
-        {
-          role: 'user',
-          content: prompt,
-        },
-      ],
     });
 
-    const outputText = completion.choices?.[0]?.message?.content;
+    const result = await model.generateContent(prompt);
+    const response = await result.response;
+    const outputText = response.text();
 
     if (!outputText) {
       throw new Error('LLM 回傳為空');
