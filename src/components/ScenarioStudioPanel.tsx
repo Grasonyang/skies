@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useMemo, useState } from 'react';
 import { ScenarioAnalysis, TimeSlot } from '@/hooks/useScenarioStudio';
 
 /**
@@ -238,8 +238,17 @@ interface ScenarioStudioPanelProps {
   scenarios: ScenarioAnalysis[];
   loading: boolean;
   error: string | null;
-  onGenerateScenario?: (activity: string, location: { lat: number; lng: number }) => void;
+  onGenerateScenario?: (
+    activity: string,
+    location: { lat: number; lng: number },
+    activityTypes?: string[]
+  ) => void;
   onClear?: () => void;
+  selectedLocation?: { lat: number; lng: number } | null;
+  selectedLocationLabel?: string | null;
+  onRequestLocation?: () => void;
+  onPickLocation?: () => void;
+  isPickingLocation?: boolean;
 }
 
 export function ScenarioStudioPanel({
@@ -248,29 +257,48 @@ export function ScenarioStudioPanel({
   error,
   onGenerateScenario,
   onClear,
+  selectedLocation,
+  selectedLocationLabel,
+  onRequestLocation,
+  onPickLocation,
+  isPickingLocation,
 }: ScenarioStudioPanelProps) {
   // 預設活動類型
-  const activities = [
-    { name: '戶外跑步', type: ['park', 'stadium'], icon: '🏃' },
-    { name: '親子公園', type: ['park', 'playground'], icon: '👨‍👩‍👧' },
-    { name: '室內健身', type: ['gym', 'sports_complex'], icon: '💪' },
-  ];
+  const templates = useMemo(
+    () => [
+      { name: '戶外跑步', types: ['park', 'stadium'], icon: '🏃' },
+      { name: '親子公園', types: ['park', 'playground'], icon: '👨‍👩‍👧' },
+      { name: '室內健身', types: ['gym', 'sports_complex'], icon: '💪' },
+      { name: '客製探索', types: ['point_of_interest'], icon: '🎯' },
+    ],
+    []
+  );
+
+  const [customActivity, setCustomActivity] = useState('自訂活動');
+  const [selectedTemplateIndex, setSelectedTemplateIndex] = useState(0);
+
+  const selectedTemplate = templates[selectedTemplateIndex] ?? templates[0];
+  const canGenerate = Boolean(onGenerateScenario && selectedLocation);
+  const locationSummary = selectedLocation
+    ? `${selectedLocation.lat.toFixed(4)}, ${selectedLocation.lng.toFixed(4)}`
+    : '請在地圖上點擊位置';
 
   return (
     <div className="space-y-6">
       {/* 操作列 */}
       {onGenerateScenario && (
         <div className="bg-white rounded-lg shadow p-4">
-          <h3 className="text-lg font-semibold mb-3">快速情境生成</h3>
+          <h3 className="text-lg font-semibold text-slate-800 mb-3">快速情境生成</h3>
           <div className="flex gap-3 flex-wrap">
-            {activities.map((activity) => (
+            {templates.slice(0, 3).map((activity) => (
               <button
                 key={activity.name}
                 onClick={() =>
-                  onGenerateScenario(activity.name, { lat: 25.033, lng: 121.5654 })
+                  selectedLocation &&
+                  onGenerateScenario(activity.name, selectedLocation, activity.types)
                 }
-                disabled={loading}
-                className="flex items-center gap-2 px-4 py-2 bg-purple-100 hover:bg-purple-200 text-purple-700 rounded-lg transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                disabled={loading || !selectedLocation}
+                className="flex items-center gap-2 rounded-lg border border-slate-200 bg-white px-4 py-2 text-slate-700 shadow-sm transition-colors hover:bg-slate-100 disabled:cursor-not-allowed disabled:opacity-60"
               >
                 <span>{activity.icon}</span>
                 <span className="font-medium">{activity.name}</span>
@@ -285,6 +313,92 @@ export function ScenarioStudioPanel({
               </button>
             )}
           </div>
+          {!selectedLocation && (
+            <p className="mt-3 text-xs text-slate-500">
+              點擊地圖取得最新座標後即可生成指定情境。
+            </p>
+          )}
+        </div>
+      )}
+
+      {/* 自訂情境 */}
+      {onGenerateScenario && (
+        <div className="bg-white rounded-lg shadow p-4 space-y-4">
+          <div className="flex flex-col gap-1">
+            <h3 className="text-lg font-semibold text-slate-800">自訂情境</h3>
+            <p className="text-xs text-slate-500">
+              選擇地圖上的位置與活動類型，生成專屬劇本。
+            </p>
+          </div>
+          <div className="grid gap-3 sm:grid-cols-[1fr_auto]">
+            <div className="space-y-2">
+              <label className="block text-xs font-semibold text-slate-600">活動名稱</label>
+              <input
+                type="text"
+                value={customActivity}
+                onChange={(event) => setCustomActivity(event.target.value)}
+                maxLength={24}
+                className="w-full rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm text-slate-700 focus:border-indigo-400 focus:outline-none focus:ring-2 focus:ring-indigo-200"
+              />
+            </div>
+            <div className="space-y-2">
+              <label className="block text-xs font-semibold text-slate-600">活動場域</label>
+              <select
+                value={selectedTemplateIndex}
+                onChange={(event) => setSelectedTemplateIndex(Number(event.target.value))}
+                className="w-full rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm font-medium text-slate-700 focus:border-indigo-400 focus:outline-none focus:ring-2 focus:ring-indigo-200"
+              >
+                {templates.map((template, index) => (
+                  <option key={template.name} value={index} className="text-slate-700">
+                    {template.icon} {template.name}
+                  </option>
+                ))}
+              </select>
+            </div>
+          </div>
+
+          <div className="rounded-xl border border-slate-200 bg-slate-50 px-4 py-3 text-xs text-slate-600">
+            <div className="flex flex-wrap items-center gap-2">
+              <span className="font-semibold text-slate-700">選擇的座標</span>
+              <span className="rounded-full border border-slate-200 bg-white px-3 py-1 text-xs font-semibold text-slate-700">
+                {locationSummary}
+              </span>
+              {selectedLocationLabel && (
+                <span className="text-[11px] text-slate-500">{selectedLocationLabel}</span>
+              )}
+              {onRequestLocation && (
+                <button
+                  type="button"
+                  onClick={onRequestLocation}
+                  className="ml-auto inline-flex items-center gap-1 rounded-full border border-slate-200 bg-white px-3 py-1 text-[11px] font-semibold text-slate-600 hover:bg-slate-100"
+                >
+                  🎯 重新定位
+                </button>
+              )}
+              {onPickLocation && (
+                <button
+                  type="button"
+                  onClick={onPickLocation}
+                  className="inline-flex items-center gap-1 rounded-full border border-indigo-200 bg-indigo-50 px-3 py-1 text-[11px] font-semibold text-indigo-600 hover:bg-indigo-100 disabled:cursor-not-allowed disabled:opacity-60"
+                  disabled={isPickingLocation}
+                >
+                  🗺️ {isPickingLocation ? '前往地圖中…' : '在地圖上選擇'}
+                </button>
+              )}
+            </div>
+          </div>
+
+          <button
+            type="button"
+            disabled={!canGenerate || !customActivity.trim()}
+            onClick={() => {
+              if (!selectedLocation || !onGenerateScenario) return;
+              onGenerateScenario(customActivity.trim(), selectedLocation, selectedTemplate.types);
+            }}
+            className="w-full rounded-full bg-indigo-500 px-4 py-3 text-sm font-semibold text-white shadow transition hover:bg-indigo-600 disabled:cursor-not-allowed disabled:opacity-60"
+          >
+            生成自訂情境
+          </button>
         </div>
       )}
 

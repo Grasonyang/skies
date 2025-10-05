@@ -70,7 +70,7 @@ export function useScenarioStudio(): UseScenarioStudioReturn {
           },
           radius: 5000,
           type: activityType,
-          languageCode: 'zh-TW',
+          languageCode: 'zh-TW', // TODO: Make this dynamic
         }),
       });
 

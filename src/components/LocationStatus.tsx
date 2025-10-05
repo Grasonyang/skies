@@ -30,7 +30,7 @@ export default function LocationStatus({ location }: LocationStatusProps) {
     ? location.accuracy < 1000
       ? `${Math.round(location.accuracy)}m`
       : `${(location.accuracy / 1000).toFixed(1)}km`
-    : '未知';
+    : '未知'; // TODO: Make this multilingual
 
   return (
     <div

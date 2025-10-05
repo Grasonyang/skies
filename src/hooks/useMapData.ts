@@ -18,6 +18,7 @@ interface UseMapDataOptions {
   commuteDestination: Coordinates | null;
   commuteEnabled: boolean;
   hours?: number;
+  commuteOrigin?: Coordinates | null;
 }
 
 export interface PeakPollutionEvent {
@@ -77,6 +78,7 @@ export function useMapData({
   userLocation,
   commuteDestination,
   commuteEnabled,
+  commuteOrigin,
   hours = 24,
 }: UseMapDataOptions): MapDataResult {
   const { data: aqiData, loading: aqiLoading, error: aqiError, refetch: refetchAqi } = useAirQuality({
@@ -102,10 +104,15 @@ export function useMapData({
     aqiData,
   });
 
-  const commuteOrigin = useMemo<Coordinates>(() => ({
-    lat: userLocation?.lat ?? DEFAULT_LOCATION.lat,
-    lng: userLocation?.lng ?? DEFAULT_LOCATION.lng,
-  }), [userLocation]);
+  const commuteOriginCoordinate = useMemo<Coordinates>(() => {
+    if (commuteOrigin) {
+      return commuteOrigin;
+    }
+    return {
+      lat: userLocation?.lat ?? DEFAULT_LOCATION.lat,
+      lng: userLocation?.lng ?? DEFAULT_LOCATION.lng,
+    };
+  }, [commuteOrigin, userLocation]);
 
   const {
     routes: commuteRoutes,
@@ -113,7 +120,7 @@ export function useMapData({
     error: commuteError,
     refetch: refetchCommute,
   } = useCommuteGuardian({
-    origin: commuteOrigin,
+    origin: commuteOriginCoordinate,
     destination: commuteDestination,
     mode: 'driving',
     enabled: commuteEnabled && Boolean(commuteDestination),

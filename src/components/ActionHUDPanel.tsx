@@ -12,13 +12,53 @@ interface ActionHUDPanelProps {
   onFeedback?: () => void;
   onStartDiscussion?: () => void;
   className?: string;
+  language?: 'zh' | 'en';
 }
 
-const riskCopy: Record<string, string> = {
-  safe: '維持既有節奏',
-  caution: '留意身體反應',
-  unhealthy: '請優先室內替代方案',
-  dangerous: '立即停止暴露',
+const riskCopy = {
+  zh: {
+    safe: '維持既有節奏',
+    caution: '留意身體反應',
+    unhealthy: '請優先室內替代方案',
+    dangerous: '立即停止暴露',
+  },
+  en: {
+    safe: 'Maintain current pace',
+    caution: 'Monitor body response',
+    unhealthy: 'Prioritize indoor alternatives',
+    dangerous: 'Stop exposure immediately',
+  },
+};
+
+const actionHudTexts = {
+  zh: {
+    title: '⚡ 行動風險 HUD',
+    description: 'Decision Engine L1 即時轉換為三個可操作建議，CTA 可直接加入提醒。',
+    healthPreference: '健康偏好：',
+    general: '通用',
+    healthToggle: 'HEALTH TOGGLE',
+    loading: '載入中...',
+    noData: '無法獲取行動建議，請稍後再試。',
+    feedback: '意見回饋',
+    share: '開始討論',
+    riskIndex: '風險指數',
+    recommendedTime: '建議時段',
+    bestTime: '最佳時段',
+  },
+  en: {
+    title: '⚡ Action Risk HUD',
+    description: 'Decision Engine L1 real-time conversion to three actionable recommendations, CTA can be directly added to reminders.',
+    healthPreference: 'Health Preference: ',
+    general: 'General',
+    healthToggle: 'HEALTH TOGGLE',
+    loading: 'Loading...',
+    noData: 'Unable to get action recommendations, please try again later.',
+    feedback: 'Feedback',
+    share: 'Start Discussion',
+    riskIndex: 'Risk Index',
+    recommendedTime: 'Recommended Time',
+    bestTime: 'Best Time',
+  },
 };
 
 const ActionHUDPanel: React.FC<ActionHUDPanelProps> = ({
@@ -28,7 +68,10 @@ const ActionHUDPanel: React.FC<ActionHUDPanelProps> = ({
   onFeedback,
   onStartDiscussion,
   className,
+  language = 'zh',
 }) => {
+  const texts = actionHudTexts[language];
+  const riskTexts = riskCopy[language];
   const { suggestions, dominantRisk } = useActionHUD({ aqiData, forecastData });
 
   const baseClass = 'bg-white/95 backdrop-blur-md rounded-3xl shadow-xl p-6 w-full max-w-3xl';
@@ -60,20 +103,20 @@ const ActionHUDPanel: React.FC<ActionHUDPanelProps> = ({
       <div className="flex flex-col gap-4">
         <header className="flex flex-col md:flex-row md:items-center md:justify-between gap-3">
           <div>
-            <h3 className="text-xl font-bold text-slate-800">⚡ 行動風險 HUD</h3>
+            <h3 className="text-xl font-bold text-slate-800">{texts.title}</h3>
             <p className="text-sm text-slate-500">
-              Decision Engine L1 即時轉換為三個可操作建議，CTA 可直接加入提醒。
+              {texts.description}
             </p>
           </div>
           <div className="flex items-center gap-3 text-xs text-slate-500">
             <div className="px-3 py-1 rounded-full bg-slate-100 border border-slate-200">
-              健康偏好：<span className="font-semibold">通用</span>
+              {texts.healthPreference}<span className="font-semibold">{texts.general}</span>
             </div>
             <button
               className="px-3 py-1 rounded-full bg-indigo-50 text-indigo-600 border border-indigo-200 text-xs"
-              onClick={() => console.info('[ActionHUD] TODO: 切換健康偏好')}
+              onClick={() => console.info('[ActionHUD] TODO: Switch health preference')}
             >
-              HEALTH TOGGLE
+              {texts.healthToggle}
             </button>
             {onFeedback && (
               <button
@@ -110,12 +153,14 @@ const ActionHUDPanel: React.FC<ActionHUDPanelProps> = ({
                 </h4>
               </div>
               <div className="text-right">
-                <p className="text-xs text-slate-500">風險指數</p>
+                <p className="text-xs text-slate-500">{texts.riskIndex}</p>
                 <p className="text-xl font-bold" style={{ color: dominantRisk.riskScore.color }}>
                   {dominantRisk.riskScore.score}
                 </p>
                 <p className="text-xs text-slate-500">
-                  {riskCopy[dominantRisk.riskScore.level] ?? '請審慎評估'}
+                                        <span className="text-xs font-medium text-slate-500">
+                        {riskTexts[dominantRisk.riskScore.level as keyof typeof riskTexts] || dominantRisk.riskScore.level}
+                      </span>
                 </p>
               </div>
             </div>
@@ -124,7 +169,7 @@ const ActionHUDPanel: React.FC<ActionHUDPanelProps> = ({
             </p>
             {dominantRisk.bestTimeWindow && (
               <div className="flex flex-wrap items-center gap-2 text-xs text-indigo-600">
-                <span className="font-semibold">建議時段</span>
+                <span className="font-semibold">{texts.recommendedTime}</span>
                 <span>
                   {new Date(dominantRisk.bestTimeWindow.start).toLocaleTimeString('zh-TW', {
                     hour: '2-digit',
@@ -155,7 +200,7 @@ const ActionHUDPanel: React.FC<ActionHUDPanelProps> = ({
               <div>
                 <h4 className="font-semibold text-slate-800">{item.title}</h4>
                 <p className="text-xs text-slate-500">
-                  {item.bestTimeText ? `最佳時段 ${item.bestTimeText}` : riskCopy[item.severity]}
+                  {item.bestTimeText ? `${texts.bestTime} ${item.bestTimeText}` : riskTexts[item.severity as keyof typeof riskTexts]}
                 </p>
               </div>
               <p className="text-sm text-slate-600 flex-1">{item.description}</p>

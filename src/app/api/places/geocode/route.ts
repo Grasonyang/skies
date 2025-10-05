@@ -47,7 +47,8 @@ export async function GET(request: NextRequest) {
   const url = new URL(GEOCODE_BASE_URL);
   url.searchParams.set('latlng', `${lat},${lng}`);
   url.searchParams.set('key', apiKey);
-  url.searchParams.set('language', 'zh-TW');
+  const language = searchParams.get('language') || 'zh-TW';
+  url.searchParams.set('language', language);
 
   try {
     const response = await fetch(url.toString(), {

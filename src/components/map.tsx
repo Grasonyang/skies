@@ -1,10 +1,11 @@
 'use client';
 
-import React, { useState, useEffect, useMemo, useCallback } from 'react';
+import React, { useState, useEffect, useMemo, useCallback, useRef } from 'react';
 import {
   APIProvider,
   Map,
   MapCameraChangedEvent,
+  Marker,
 } from '@vis.gl/react-google-maps';
 import { useGeolocation } from '@/hooks/useGeolocation';
 import { useMapData } from '@/hooks/useMapData';
@@ -31,6 +32,7 @@ import ClickQueryMarker from '@/components/map/ClickQueryMarker';
 import ActionCountdownPanel from '@/components/ActionCountdownPanel';
 import { useSocialShare } from '@/hooks/useSocialShare';
 import BriefingPanel from '@/components/BriefingPanel';
+import { calculateDistance } from '@/lib/utils';
 
 const ZONE_ORDER: Record<'dangerous' | 'caution' | 'safe', number> = {
   dangerous: 0,
@@ -50,6 +52,27 @@ type FeatureAction =
   | 'healthRecommendation'
   | 'mediaBriefing';
 
+const LANGUAGE_TEXTS = {
+  zh: {
+    loading: '正在獲取您的位置...',
+    apiKeyError: '⚠️ 配置錯誤',
+    apiKeyErrorMessage: 'Google Maps API key 未設定。請在環境變數中設定',
+    or: '或',
+    mapsApiLoaded: '🗺️ Maps API 已載入',
+    missionCenterTitle: '空氣任務中心',
+    airQualityMissionSuite: 'Air Quality Mission Suite'
+  },
+  en: {
+    loading: 'Getting your location...',
+    apiKeyError: '⚠️ Configuration Error',
+    apiKeyErrorMessage: 'Google Maps API key is not configured. Please set it in environment variables',
+    or: 'or',
+    mapsApiLoaded: '🗺️ Maps API loaded',
+    missionCenterTitle: 'Air Mission Center',
+    airQualityMissionSuite: 'Air Quality Mission Suite'
+  }
+};
+
 interface FeatureConfig {
   id: string;
   action: FeatureAction;
@@ -59,6 +82,15 @@ interface FeatureConfig {
   labels: Record<FeatureLanguage, string>;
   descriptions: Record<FeatureLanguage, string>;
   requiresAqi?: boolean;
+}
+
+interface CommuteScenarioConfig {
+  id: string;
+  label: string;
+  description: string;
+  destination: { lat: number; lng: number };
+  origin?: { lat: number; lng: number };
+  isCustom?: boolean;
 }
 
 const FEATURE_CONFIGS: FeatureConfig[] = [
@@ -189,8 +221,10 @@ const FEATURE_CONFIGS: FeatureConfig[] = [
 ];
 
 const MapComponent = () => {
-  const apiKey = process.env.GOOGLE_MAPS_API_KEY;
-  const mapId = process.env.NEXT_PUBLIC_GOOGLE_MAP_ID;
+  const apiKey =
+    process.env.NEXT_PUBLIC_GOOGLE_MAPS_API_KEY ?? process.env.GOOGLE_MAPS_API_KEY;
+  const mapId =
+    process.env.NEXT_PUBLIC_GOOGLE_MAPS_ID ?? process.env.NEXT_PUBLIC_GOOGLE_MAP_ID;
   const { location, loading, error, suggestedZoom } = useGeolocation();
   const [mapCenter, setMapCenter] = useState<{ lat: number; lng: number } | null>(null);
   const [zoom, setZoom] = useState(13);
@@ -217,39 +251,121 @@ const MapComponent = () => {
   const [showScenarioStudio, setShowScenarioStudio] = useState(false);
   const [showBriefing, setShowBriefing] = useState(false);
   const [featureLanguage, setFeatureLanguage] = useState<FeatureLanguage>('zh');
+  const [isSelectingCommute, setIsSelectingCommute] = useState(false);
+  const [commuteDraftOrigin, setCommuteDraftOrigin] = useState<{ lat: number; lng: number } | null>(null);
+  const [commuteDraftDestination, setCommuteDraftDestination] = useState<{ lat: number; lng: number } | null>(null);
+  const previousQueryRef = useRef<{ lat: number; lng: number } | null>(null);
+  const [commuteSelectionTarget, setCommuteSelectionTarget] = useState<
+    'origin' | 'destination' | 'confirm' | null
+  >(null);
+  const [commuteEditingScenarioId, setCommuteEditingScenarioId] = useState<string | null>(null);
+  const [isSelectingScenarioLocation, setIsSelectingScenarioLocation] = useState(false);
 
-  const commuteScenarios = useMemo(() => ([
-    {
-      id: 'office',
-      label: '上班族 · 內湖 → 信義',
-      description: '內湖科技園區到台北 101',
-      destination: { lat: 25.033968, lng: 121.564468 },
-    },
-    {
-      id: 'parent',
-      label: '親子 · 中山 → 科教館',
-      description: '中山國小到國立臺灣科學教育館',
-      destination: { lat: 25.095713, lng: 121.526299 },
-    },
-    {
-      id: 'runner',
-      label: '夜跑 · 三重 → 河濱',
-      description: '三重國民運動中心到大佳河濱公園',
-      destination: { lat: 25.071422, lng: 121.533484 },
-    },
-  ]), []);
+  const {
+    scenarios,
+    loading: scenarioLoading,
+    error: scenarioError,
+    generateScenario,
+    clearScenarios,
+  } = useScenarioStudio();
+
+  const defaultCommuteScenarios = useMemo<CommuteScenarioConfig[]>(
+    () => [
+      {
+        id: 'office',
+        label: '上班族 · 七期 → 市政',
+        description: '七期重劃區到台中市政府',
+        destination: { lat: 24.163162, lng: 120.648676 },
+      },
+      {
+        id: 'parent',
+        label: '親子 · 北屯 → 美術館',
+        description: '北屯兒童公園到國立臺灣美術館',
+        destination: { lat: 24.141608, lng: 120.663539 },
+      },
+      {
+        id: 'runner',
+        label: '夜跑 · 西屯 → 秋紅谷',
+        description: '秋紅谷生態公園環狀步道',
+        destination: { lat: 24.164544, lng: 120.640802 },
+      },
+    ],
+    []
+  );
+
+  const [customCommuteScenarios, setCustomCommuteScenarios] = useState<CommuteScenarioConfig[]>([]);
+
+  const commuteScenarios = useMemo<CommuteScenarioConfig[]>(
+    () => [...defaultCommuteScenarios, ...customCommuteScenarios],
+    [defaultCommuteScenarios, customCommuteScenarios]
+  );
 
   const [commuteScenarioId, setCommuteScenarioId] = useState(
-    commuteScenarios[0]?.id ?? 'office'
+    defaultCommuteScenarios[0]?.id ?? 'office'
   );
 
-  const selectedCommuteScenario = useMemo(
-    () =>
-      commuteScenarios.find((scenario) => scenario.id === commuteScenarioId) ||
-      commuteScenarios[0] ||
-      null,
-    [commuteScenarios, commuteScenarioId]
-  );
+  const selectedCommuteScenario = useMemo(() => {
+    const fallback = commuteScenarios[0] ?? null;
+    return commuteScenarios.find((scenario) => scenario.id === commuteScenarioId) ?? fallback;
+  }, [commuteScenarios, commuteScenarioId]);
+
+  useEffect(() => {
+    if (!queryLocation) return;
+    const previous = previousQueryRef.current;
+    previousQueryRef.current = queryLocation;
+    if (!previous) {
+      return;
+    }
+
+    if (isSelectingCommute) {
+      return;
+    }
+
+    const distanceMoved = calculateDistance(
+      previous.lat,
+      previous.lng,
+      queryLocation.lat,
+      queryLocation.lng
+    );
+
+    if (distanceMoved < 5) {
+      return;
+    }
+
+    if (scenarios.length > 0) {
+      clearScenarios();
+    }
+
+    if (customCommuteScenarios.length > 0) {
+      setCustomCommuteScenarios([]);
+      if (!defaultCommuteScenarios.some((scenario) => scenario.id === commuteScenarioId)) {
+        setCommuteScenarioId(defaultCommuteScenarios[0]?.id ?? 'office');
+      }
+      setIsSelectingCommute(false);
+      setCommuteDraftOrigin(null);
+      setCommuteDraftDestination(null);
+      setCommuteSelectionTarget(null);
+      setCommuteEditingScenarioId(null);
+    }
+  }, [
+    queryLocation,
+    scenarios,
+    customCommuteScenarios,
+    clearScenarios,
+    isSelectingCommute,
+    defaultCommuteScenarios,
+    commuteScenarioId,
+  ]);
+
+  const commuteOriginCoordinate = useMemo(() => {
+    if (selectedCommuteScenario?.origin) {
+      return selectedCommuteScenario.origin;
+    }
+    if (location) {
+      return { lat: location.lat, lng: location.lng };
+    }
+    return { lat: DEFAULT_LOCATION.lat, lng: DEFAULT_LOCATION.lng };
+  }, [selectedCommuteScenario, location]);
 
   const {
     aqiData,
@@ -265,14 +381,19 @@ const MapComponent = () => {
     refetchCommute,
     peakEvent,
     briefingContext,
+    geocode,
   } = useMapData({
     queryLocation,
     userLocation: location,
+    commuteOrigin: commuteOriginCoordinate,
     commuteDestination: selectedCommuteScenario?.destination ?? null,
     commuteEnabled: Boolean(selectedCommuteScenario),
   });
-
-  const commuteOriginLabel = location ? '目前位置' : '預設台北市';
+  const commuteOriginLabel = selectedCommuteScenario?.origin
+    ? `自訂起點 ${formatCoordinateLabel(selectedCommuteScenario.origin)}`
+    : location
+      ? '目前位置'
+      : '預設台中市';
   const commuteDestinationLabel = selectedCommuteScenario?.description ?? '---';
 
   const shareToSocial = useSocialShare();
@@ -335,15 +456,202 @@ const MapComponent = () => {
     return `目標：在 ${peakWindowText} 前讓更多人看到行動建議。`;
   }, [peakWindowText]);
 
-  // Scenario Studio hook
-  const {
-    scenarios,
-    loading: scenarioLoading,
-    error: scenarioError,
-    generateScenario,
-    clearScenarios,
-  } = useScenarioStudio();
+  const selectionStep =
+    commuteSelectionTarget ?? (!commuteDraftOrigin
+      ? 'origin'
+      : !commuteDraftDestination
+        ? 'destination'
+        : 'confirm');
 
+  const selectionInstruction = useMemo(() => {
+    switch (selectionStep) {
+      case 'origin':
+        return '點擊地圖選擇起點位置。';
+      case 'destination':
+        return '再點一次地圖選擇目的地，可拖曳調整。';
+      default:
+        return '調整完畢後按下「產生路線」完成。';
+    }
+  }, [selectionStep]);
+
+  const handleStartCommuteSelection = useCallback(() => {
+    setIsSelectingCommute(true);
+    setCommuteDraftOrigin(null);
+    setCommuteDraftDestination(null);
+    setCommuteSelectionTarget('origin');
+    setCommuteEditingScenarioId(null);
+    setShowCommuteGuardian(false);
+  }, []);
+
+  const handleCancelCommuteSelection = useCallback(() => {
+    setIsSelectingCommute(false);
+    setCommuteDraftOrigin(null);
+    setCommuteDraftDestination(null);
+    setCommuteSelectionTarget(null);
+    setCommuteEditingScenarioId(null);
+  }, []);
+
+  const handleResetCommuteSelection = useCallback(() => {
+    setCommuteDraftOrigin(null);
+    setCommuteDraftDestination(null);
+    setCommuteSelectionTarget('origin');
+    setCommuteEditingScenarioId(null);
+  }, []);
+
+  const handlePickScenarioLocation = useCallback(() => {
+    setIsSelectingScenarioLocation(true);
+    setShowScenarioStudio(false);
+  }, []);
+
+  const handleCancelScenarioPick = useCallback(() => {
+    setIsSelectingScenarioLocation(false);
+    setShowScenarioStudio(true);
+  }, []);
+
+  const handleMapCoordinateSelection = useCallback(
+    (coordinate: { lat: number; lng: number }) => {
+      if (isSelectingScenarioLocation) {
+        setIsSelectingScenarioLocation(false);
+        setShowScenarioStudio(true);
+        return;
+      }
+
+      if (!isSelectingCommute || !commuteSelectionTarget) return;
+
+      if (commuteSelectionTarget === 'origin') {
+        setCommuteDraftOrigin(coordinate);
+        setCommuteSelectionTarget(
+          commuteDraftDestination ? 'confirm' : 'destination'
+        );
+        return;
+      }
+
+      if (commuteSelectionTarget === 'destination') {
+        setCommuteDraftDestination(coordinate);
+        setCommuteSelectionTarget(commuteDraftOrigin ? 'confirm' : 'origin');
+        return;
+      }
+    },
+    [
+      isSelectingScenarioLocation,
+      isSelectingCommute,
+      commuteSelectionTarget,
+      commuteDraftOrigin,
+      commuteDraftDestination,
+    ]
+  );
+
+  const handleDraftOriginDrag = useCallback((event: google.maps.MapMouseEvent) => {
+    if (!event.latLng) return;
+    setCommuteDraftOrigin({ lat: event.latLng.lat(), lng: event.latLng.lng() });
+    setCommuteSelectionTarget('confirm');
+  }, []);
+
+  const handleDraftDestinationDrag = useCallback((event: google.maps.MapMouseEvent) => {
+    if (!event.latLng) return;
+    setCommuteDraftDestination({ lat: event.latLng.lat(), lng: event.latLng.lng() });
+    setCommuteSelectionTarget('confirm');
+  }, []);
+
+  const handleConfirmCommuteSelection = useCallback(() => {
+    if (!commuteDraftOrigin || !commuteDraftDestination) {
+      return;
+    }
+
+    const description = `${formatCoordinateLabel(commuteDraftOrigin)} → ${formatCoordinateLabel(
+      commuteDraftDestination
+    )}`;
+
+    if (commuteEditingScenarioId) {
+      setCustomCommuteScenarios((prev) =>
+        prev.map((scenario) =>
+          scenario.id === commuteEditingScenarioId
+            ? {
+                ...scenario,
+                origin: commuteDraftOrigin,
+                destination: commuteDraftDestination,
+                description,
+              }
+            : scenario
+        )
+      );
+      setCommuteScenarioId(commuteEditingScenarioId);
+    } else {
+      const existing = customCommuteScenarios.find(
+        (scenario) =>
+          scenario.origin &&
+          coordsAreEqual(scenario.origin, commuteDraftOrigin) &&
+          coordsAreEqual(scenario.destination, commuteDraftDestination)
+      );
+
+      if (existing) {
+        setCustomCommuteScenarios((prev) =>
+          prev.map((scenario) =>
+            scenario.id === existing.id
+              ? {
+                  ...scenario,
+                  origin: commuteDraftOrigin,
+                  destination: commuteDraftDestination,
+                  description,
+                }
+              : scenario
+          )
+        );
+        setCommuteScenarioId(existing.id);
+      } else {
+        const newScenario: CommuteScenarioConfig = {
+          id: `custom-${Date.now()}`,
+          label: `自訂路線 ${customCommuteScenarios.length + 1}`,
+          description,
+          origin: commuteDraftOrigin,
+          destination: commuteDraftDestination,
+          isCustom: true,
+        };
+        setCustomCommuteScenarios((prev) => [...prev, newScenario]);
+        setCommuteScenarioId(newScenario.id);
+      }
+    }
+
+    setIsSelectingCommute(false);
+    setCommuteDraftOrigin(null);
+    setCommuteDraftDestination(null);
+    setCommuteSelectionTarget(null);
+    setCommuteEditingScenarioId(null);
+    setShowCommuteGuardian(true);
+  }, [
+    commuteDraftOrigin,
+    commuteDraftDestination,
+    customCommuteScenarios,
+    commuteEditingScenarioId,
+  ]);
+
+  const handleChooseOriginFromPanel = useCallback(() => {
+    setIsSelectingCommute(true);
+    setShowCommuteGuardian(false);
+    setCommuteEditingScenarioId(
+      selectedCommuteScenario?.isCustom ? selectedCommuteScenario.id : null
+    );
+    setCommuteDraftOrigin(
+      selectedCommuteScenario?.origin ?? commuteOriginCoordinate
+    );
+    setCommuteDraftDestination(selectedCommuteScenario?.destination ?? null);
+    setCommuteSelectionTarget('origin');
+  }, [selectedCommuteScenario, commuteOriginCoordinate]);
+
+  const handleChooseDestinationFromPanel = useCallback(() => {
+    setIsSelectingCommute(true);
+    setShowCommuteGuardian(false);
+    setCommuteEditingScenarioId(
+      selectedCommuteScenario?.isCustom ? selectedCommuteScenario.id : null
+    );
+    setCommuteDraftOrigin(
+      selectedCommuteScenario?.origin ?? commuteOriginCoordinate
+    );
+    setCommuteDraftDestination(selectedCommuteScenario?.destination ?? null);
+    setCommuteSelectionTarget('destination');
+  }, [selectedCommuteScenario, commuteOriginCoordinate]);
+
+  // Scenario Studio hook
   const missionControlScenarios = useMemo(() => {
     const primary = location
       ? { lat: location.lat, lng: location.lng }
@@ -355,7 +663,7 @@ const MapComponent = () => {
         name: '上班族 · 即時通勤',
         description: location
           ? '根據目前定位估算通勤風險'
-          : '信義金融區（預設地標）',
+          : '台中市政府商圈（預設地標）',
         icon: '💼',
         coordinates: {
           lat: primary.lat,
@@ -365,21 +673,21 @@ const MapComponent = () => {
       {
         id: 'family',
         name: '親子 · 公園午後',
-        description: '大安森林公園中央草坪',
+        description: '台中都會公園親子草坪',
         icon: '👨‍👩‍👧',
         coordinates: {
-          lat: 25.033964,
-          lng: 121.543987,
+          lat: 24.245774,
+          lng: 120.580551,
         },
       },
       {
         id: 'runner',
         name: '運動 · 夜跑河濱',
-        description: '大直美堤河濱運動區',
+        description: '草悟道夜間慢跑路線',
         icon: '🏃‍♂️',
         coordinates: {
-          lat: 25.082552,
-          lng: 121.557897,
+          lat: 24.152084,
+          lng: 120.663752,
         },
       },
     ];
@@ -407,9 +715,10 @@ const MapComponent = () => {
     mediaBriefing: () => setShowBriefing(true),
   };
 
+  const texts = LANGUAGE_TEXTS[featureLanguage];
   const featureHeading = featureLanguage === 'zh'
-    ? `📊 ${briefingContext.cityName} 空氣任務中心`
-    : `📊 ${briefingContext.cityName} Air Quality Mission Suite`;
+    ? `📊 ${briefingContext.cityName} ${texts.missionCenterTitle}`
+    : `📊 ${briefingContext.cityName} ${texts.airQualityMissionSuite}`;
 
   const handleLocationSelect = useCallback((selected: { lat: number; lng: number }) => {
     setMapCenter(selected);
@@ -421,9 +730,13 @@ const MapComponent = () => {
     return (
       <div className="flex flex-col items-center justify-center min-h-screen bg-red-50">
         <div className="bg-white p-8 rounded-lg shadow-lg max-w-md">
-          <h2 className="text-xl font-bold text-red-600 mb-4">⚠️ 配置錯誤</h2>
+          <h2 className="text-xl font-bold text-red-600 mb-4">{texts.apiKeyError}</h2>
           <p className="text-gray-700">
-            Google Maps API key 未設定。請在環境變數中設定{' '}
+            {texts.apiKeyErrorMessage}{' '}
+            <code className="bg-gray-100 px-2 py-1 rounded text-sm">
+              NEXT_PUBLIC_GOOGLE_MAPS_API_KEY
+            </code>
+            {' '}{texts.or}{' '}
             <code className="bg-gray-100 px-2 py-1 rounded text-sm">
               GOOGLE_MAPS_API_KEY
             </code>
@@ -435,11 +748,11 @@ const MapComponent = () => {
 
   // 顯示載入動畫
   if (loading || !mapCenter) {
-    return <LoadingSpinner message="正在獲取您的位置..." />;
+    return <LoadingSpinner message={texts.loading} />;
   }
 
   return (
-    <APIProvider apiKey={apiKey} onLoad={() => console.log('🗺️ Maps API 已載入')}>
+    <APIProvider apiKey={apiKey} onLoad={() => console.log(texts.mapsApiLoaded)}>
       <div className="relative h-screen w-full">
         {/* 地圖 */}
         <Map
@@ -512,11 +825,46 @@ const MapComponent = () => {
             onLocationClick={handleLocationSelect}
             currentQuery={queryLocation}
             aqiData={aqiData ?? null}
+            onMapClick={handleMapCoordinateSelection}
           />
           {/* 熱力圖層 - 降低透明度 */}
           <HeatmapLayer opacity={0.45} />
           {commuteZones.length > 0 && <CommuteZonesLayer zones={commuteZones} />}
           {commuteRoutes.length > 0 && <CommuteRoutesLayer routes={commuteRoutes} />}
+          {isSelectingCommute && commuteDraftOrigin && (
+            <Marker
+              key="draft-origin"
+              position={commuteDraftOrigin}
+              draggable
+              onDragEnd={handleDraftOriginDrag}
+              label="A"
+            />
+          )}
+          {isSelectingCommute && commuteDraftDestination && (
+            <Marker
+              key="draft-destination"
+              position={commuteDraftDestination}
+              draggable
+              onDragEnd={handleDraftDestinationDrag}
+              label="B"
+            />
+          )}
+          {!isSelectingCommute &&
+            selectedCommuteScenario?.origin &&
+            selectedCommuteScenario.isCustom && (
+              <>
+                <Marker
+                  key="active-origin"
+                  position={selectedCommuteScenario.origin}
+                  label="A"
+                />
+                <Marker
+                  key="active-destination"
+                  position={selectedCommuteScenario.destination}
+                  label="B"
+                />
+              </>
+            )}
         </Map>
 
         {/* 位置狀態顯示 */}
@@ -602,7 +950,17 @@ const MapComponent = () => {
               selectedScenarioId={commuteScenarioId}
               onSelectScenario={(id) => {
                 setCommuteScenarioId(id);
+                setIsSelectingCommute(false);
+                setCommuteDraftOrigin(null);
+                setCommuteDraftDestination(null);
+                setCommuteSelectionTarget(null);
+                setCommuteEditingScenarioId(null);
               }}
+              onStartCustomRoute={handleStartCommuteSelection}
+              isSelectingRoute={isSelectingCommute}
+              onChooseOrigin={handleChooseOriginFromPanel}
+              onChooseDestination={handleChooseDestinationFromPanel}
+              language={featureLanguage}
             />
           </div>
         </DialogFrame>
@@ -627,17 +985,29 @@ const MapComponent = () => {
               scenarios={scenarios}
               loading={scenarioLoading}
               error={scenarioError}
-              onGenerateScenario={(activity, location) => {
+              onGenerateScenario={(activity, location, types) => {
                 // 根據活動類型選擇場域類型
                 const activityTypeMap: Record<string, string[]> = {
                   '戶外跑步': ['park', 'stadium'],
                   '親子公園': ['park', 'playground'],
                   '室內健身': ['gym', 'sports_complex'],
                 };
-                const types = activityTypeMap[activity] || ['park'];
-                generateScenario(activity, location, types);
+                const resolvedTypes = types ?? activityTypeMap[activity] ?? ['park'];
+                generateScenario(activity, location, resolvedTypes);
               }}
               onClear={clearScenarios}
+              selectedLocation={queryLocation}
+              selectedLocationLabel={geocode.data?.formattedAddress ?? null}
+              onRequestLocation={
+                location
+                  ? () => {
+                      setMapCenter({ lat: location.lat, lng: location.lng });
+                      setQueryLocation({ lat: location.lat, lng: location.lng });
+                    }
+                  : undefined
+              }
+              onPickLocation={handlePickScenarioLocation}
+              isPickingLocation={isSelectingScenarioLocation}
             />
           </div>
         </DialogFrame>
@@ -704,6 +1074,7 @@ const MapComponent = () => {
               aqiData={aqiData}
               forecastData={forecastData}
               commuteRoutes={commuteRoutes}
+              language={featureLanguage}
             />
           </div>
         </DialogFrame>
@@ -757,6 +1128,7 @@ const MapComponent = () => {
                   onFeedback={() => setShowFeedback(true)}
                   onStartDiscussion={aqiData ? handleStartDiscussion : undefined}
                   className="mx-auto max-w-none border border-slate-100 bg-white shadow-none"
+                  language={featureLanguage}
                 />
               ) : (
                 <RiskMatrixPanel
@@ -784,6 +1156,90 @@ const MapComponent = () => {
           <div className="absolute top-20 left-4 right-4 md:left-4 md:right-auto md:max-w-md z-10">
             <div className="bg-yellow-100 border border-yellow-400 text-yellow-800 px-4 py-3 rounded-lg shadow-lg">
               <p className="text-sm">⚠️ {error}</p>
+            </div>
+          </div>
+        )}
+
+        {isSelectingScenarioLocation && (
+          <div className="absolute bottom-28 left-1/2 z-20 w-full max-w-md -translate-x-1/2 px-4">
+            <div className="rounded-2xl border border-slate-200 bg-white/95 p-4 shadow-xl">
+              <div className="flex items-center justify-between">
+                <p className="text-sm font-semibold text-slate-700">選擇情境位置</p>
+                <span className="text-[11px] font-semibold text-indigo-600">步驟 1/1</span>
+              </div>
+              <p className="mt-2 text-xs text-slate-600">
+                在地圖上點擊要生成劇本的地點，可多次重新選擇。
+              </p>
+              <div className="mt-3 flex justify-end gap-2">
+                <button
+                  type="button"
+                  onClick={handleCancelScenarioPick}
+                  className="rounded-full border border-slate-200 px-3 py-1 text-xs font-semibold text-slate-600 transition hover:bg-slate-100"
+                >
+                  取消
+                </button>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {isSelectingCommute && (
+          <div className="absolute bottom-28 left-1/2 z-20 w-full max-w-md -translate-x-1/2 px-4">
+            <div className="rounded-2xl border border-indigo-200 bg-white/95 p-4 shadow-xl">
+              <div className="flex items-center justify-between">
+                <p className="text-sm font-semibold text-indigo-600">自訂通勤路線</p>
+                <span className="rounded-full bg-indigo-50 px-3 py-1 text-[11px] font-semibold text-indigo-600">
+                  {selectionStep === 'origin'
+                    ? '步驟 1/3'
+                    : selectionStep === 'destination'
+                    ? '步驟 2/3'
+                    : '步驟 3/3'}
+                </span>
+              </div>
+              <p className="mt-2 text-xs text-slate-600">{selectionInstruction}</p>
+
+              <div className="mt-3 grid gap-2 text-xs text-slate-600">
+                <div className="flex items-center justify-between rounded-lg bg-indigo-50 px-3 py-2">
+                  <span className="font-semibold text-indigo-700">起點</span>
+                  <span className="font-mono text-xs">
+                    {commuteDraftOrigin ? formatCoordinateLabel(commuteDraftOrigin) : '未設定'}
+                  </span>
+                </div>
+                <div className="flex items-center justify-between rounded-lg bg-slate-100 px-3 py-2">
+                  <span className="font-semibold text-slate-700">目的地</span>
+                  <span className="font-mono text-xs">
+                    {commuteDraftDestination
+                      ? formatCoordinateLabel(commuteDraftDestination)
+                      : '未設定'}
+                  </span>
+                </div>
+              </div>
+
+              <div className="mt-3 flex flex-wrap justify-end gap-2">
+                <button
+                  type="button"
+                  onClick={handleResetCommuteSelection}
+                  disabled={!commuteDraftOrigin && !commuteDraftDestination}
+                  className="rounded-full border border-slate-200 px-3 py-1 text-xs font-semibold text-slate-600 transition hover:bg-slate-100 disabled:cursor-not-allowed disabled:opacity-60"
+                >
+                  重置
+                </button>
+                <button
+                  type="button"
+                  onClick={handleCancelCommuteSelection}
+                  className="rounded-full border border-slate-200 px-3 py-1 text-xs font-semibold text-slate-600 transition hover:bg-slate-100"
+                >
+                  取消
+                </button>
+                <button
+                  type="button"
+                  onClick={handleConfirmCommuteSelection}
+                  disabled={!commuteDraftOrigin || !commuteDraftDestination}
+                  className="rounded-full bg-indigo-500 px-4 py-2 text-xs font-semibold text-white shadow transition hover:bg-indigo-600 disabled:cursor-not-allowed disabled:opacity-60"
+                >
+                  產生路線
+                </button>
+              </div>
             </div>
           </div>
         )}
@@ -867,3 +1323,17 @@ const MapComponent = () => {
 };
 
 export default MapComponent;
+
+function formatCoordinateLabel(coord: { lat: number; lng: number }) {
+  return `${coord.lat.toFixed(3)}, ${coord.lng.toFixed(3)}`;
+}
+
+function coordsAreEqual(
+  a: { lat: number; lng: number },
+  b: { lat: number; lng: number },
+  tolerance: number = 0.0005
+) {
+  return (
+    Math.abs(a.lat - b.lat) <= tolerance && Math.abs(a.lng - b.lng) <= tolerance
+  );
+}

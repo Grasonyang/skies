@@ -91,7 +91,7 @@ async function getIPLocation(): Promise<Location> {
 }
 
 /**
- * 獲取預設位置（台北市中心）
+ * 獲取預設位置（台中市中心）
  */
 function getDefaultLocation(): Location {
   return {

@@ -145,7 +145,14 @@ class AirQualityService {
     const dominantPollutant = current.dominantPollutant ?? 'pm25';
 
     const hourlyForecasts = Array.from({ length: hours }).map((_, index) => {
-      const variation = (Math.random() - 0.5) * 0.3; // ±15% 波動
+      const normalizedIndex = hours > 1 ? index / (hours - 1) : 0;
+      const diurnalFactor = Math.sin(normalizedIndex * Math.PI); // 模擬日夜循環
+      const deterministicSeed = this.hashCoordinates(
+        (current.location?.lat ?? 0) + index * 0.01,
+        (current.location?.lng ?? 0) - index * 0.01
+      );
+
+      const variation = (deterministicSeed - 0.5) * 0.25 + diurnalFactor * 0.2;
       const predictedAqi = Math.round(baseAqi * (1 + variation));
       const normalizedAqi = Math.max(0, Math.min(500, predictedAqi));
 
@@ -161,11 +168,31 @@ class AirQualityService {
             dominantPollutant,
           },
         ],
-        pollutants: current.pollutants?.map((pollutant) => ({
-          code: pollutant.code,
-          displayName: pollutant.displayName,
-          concentration: pollutant.concentration,
-        })),
+        pollutants: current.pollutants?.map((pollutant, pollutantIndex) => {
+          const pollutantSeed = this.hashCoordinates(
+            (current.location?.lat ?? 0) + pollutantIndex * 0.02 + index * 0.005,
+            (current.location?.lng ?? 0) - pollutantIndex * 0.02 - index * 0.005
+          );
+          const pollutantVariation =
+            (pollutantSeed - 0.5) * 0.35 + diurnalFactor * 0.25;
+          const nextValue = Math.max(
+            0,
+            Number(
+              (pollutant.concentration.value * (1 + pollutantVariation)).toFixed(1)
+            )
+          );
+
+          return {
+            code: pollutant.code,
+            displayName: pollutant.displayName,
+            fullName: pollutant.fullName,
+            concentration: {
+              ...pollutant.concentration,
+              value: nextValue,
+            },
+            additionalInfo: pollutant.additionalInfo,
+          };
+        }),
       };
     });
 

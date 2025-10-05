@@ -9,6 +9,7 @@ interface ClickQueryMarkerProps {
   onLocationClick: (location: { lat: number; lng: number }) => void;
   currentQuery: { lat: number; lng: number } | null;
   aqiData: AQIData | null;
+  onMapClick?: (location: { lat: number; lng: number }) => void;
 }
 
 /**
@@ -23,6 +24,7 @@ const ClickQueryMarker: React.FC<ClickQueryMarkerProps> = ({
   onLocationClick,
   currentQuery,
   aqiData,
+  onMapClick,
 }) => {
   const map = useMap();
   const [clickedLocation, setClickedLocation] = useState<{
@@ -52,6 +54,7 @@ const ClickQueryMarker: React.FC<ClickQueryMarkerProps> = ({
         console.log('🖱️ 地圖點擊:', location);
         setClickedLocation(location);
         onLocationClick(location);
+        onMapClick?.(location);
 
         // 將地圖移至點擊位置並帶入適中縮放
         map.panTo(location);
@@ -65,7 +68,7 @@ const ClickQueryMarker: React.FC<ClickQueryMarkerProps> = ({
     return () => {
       google.maps.event.removeListener(clickListener);
     };
-  }, [map, onLocationClick]);
+  }, [map, onLocationClick, onMapClick]);
 
   // 如果沒有查詢位置，不顯示標記
   if (!currentQuery && !clickedLocation) {
@@ -79,7 +82,9 @@ const ClickQueryMarker: React.FC<ClickQueryMarkerProps> = ({
   const aqiLevel = aqiData ? getAQILevel(aqiData.aqi) : null;
   const pinColor = aqiLevel?.color || '#3b82f6';
 
-  const supportsAdvancedMarker = Boolean(process.env.NEXT_PUBLIC_GOOGLE_MAP_ID);
+  const supportsAdvancedMarker = Boolean(
+    process.env.NEXT_PUBLIC_GOOGLE_MAPS_ID ?? process.env.NEXT_PUBLIC_GOOGLE_MAP_ID
+  );
 
   if (!supportsAdvancedMarker) {
     const icon = typeof window !== 'undefined' && (window as typeof window & { google?: typeof google }).google

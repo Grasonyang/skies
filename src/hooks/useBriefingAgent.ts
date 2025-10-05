@@ -9,6 +9,7 @@ interface UseBriefingAgentOptions {
   aqiData: AQIData | null;
   forecastData: ForecastResponse | null;
   commuteRoutes: CommuteGuardianRoute[];
+  language?: 'zh' | 'en';
 }
 
 export interface BriefingLevel {
@@ -35,6 +36,7 @@ export function useBriefingAgent({
   aqiData,
   forecastData,
   commuteRoutes,
+  language = 'zh',
 }: UseBriefingAgentOptions) {
   const [state, setState] = useState<BriefingState>({
     data: null,
@@ -64,6 +66,7 @@ export function useBriefingAgent({
         category: aqiData.category,
         dominantPollutant: aqiData.dominantPollutant,
         timestamp: aqiData.timestamp,
+        location: aqiData.location,
       },
       forecast: peakForecast
         ? {
@@ -93,7 +96,7 @@ export function useBriefingAgent({
         headers: {
           'Content-Type': 'application/json',
         },
-        body: JSON.stringify({ context: payload }),
+        body: JSON.stringify({ context: payload, language }),
       });
 
       if (!response.ok) {
@@ -110,7 +113,7 @@ export function useBriefingAgent({
         error: error instanceof Error ? error.message : '多級摘要取得失敗',
       });
     }
-  }, [enabled, payload]);
+  }, [enabled, payload, language]);
 
   useEffect(() => {
     fetchBriefing();

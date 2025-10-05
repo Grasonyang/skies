@@ -48,7 +48,7 @@ const HealthRecommendationPanel: React.FC<HealthRecommendationPanelProps> = ({ a
     hazardous: 'bg-purple-100 text-purple-800 border-purple-300',
   };
 
-  const containerClasses = `bg-white/95 backdrop-blur-sm rounded-2xl shadow-2xl p-4 w-full max-h-96 overflow-y-auto ${className ?? ''}`;
+  const containerClasses = `relative bg-white/95 backdrop-blur-sm rounded-2xl shadow-2xl p-4 w-full max-h-[80vh] overflow-y-auto ${className ?? ''}`;
 
   return (
     <div className={containerClasses}>
@@ -64,10 +64,10 @@ const HealthRecommendationPanel: React.FC<HealthRecommendationPanelProps> = ({ a
             id="user-group"
             value={selectedGroup}
             onChange={(e) => setSelectedGroup(e.target.value as UserGroup)}
-            className="bg-gray-100 rounded-md px-2 py-1 text-sm"
+            className="w-full min-w-[12rem] rounded-md border border-slate-200 bg-white px-3 py-1.5 text-sm font-medium text-slate-700 shadow-sm transition focus:outline-none focus:ring-2 focus:ring-indigo-400"
           >
             {USER_GROUP_OPTIONS.map((opt) => (
-              <option key={opt.value} value={opt.value}>
+              <option key={opt.value} value={opt.value} className="text-slate-700">
                 {opt.icon} {opt.label}
               </option>
             ))}

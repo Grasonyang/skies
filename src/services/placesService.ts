@@ -44,7 +44,7 @@ class PlacesService {
           },
           radius,
           type: activityType,
-          languageCode: 'zh-TW',
+          languageCode: 'zh-TW', // TODO: Make this dynamic
         }),
       });
 

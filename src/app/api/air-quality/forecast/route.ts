@@ -3,9 +3,29 @@ import { airQualityService } from '@/services/airQualityService';
 import { isValidCoordinate } from '@/lib/utils';
 
 /**
- * 空氣品質預測 API
- * GET /api/air-quality/forecast?lat=25.033&lng=121.5654&hours=24
+ * 空氣品質預測 API · Air Quality Forecast API
+ * GET /api/air-quality/forecast?lat=24.147736&lng=120.673648&hours=24
  */
+
+function buildErrorResponse(
+  zh: string,
+  en: string,
+  status: number,
+  extras: Record<string, unknown> = {}
+) {
+  return NextResponse.json(
+    {
+      error: `${zh} / ${en}`,
+      translations: {
+        zh,
+        en,
+      },
+      ...extras,
+    },
+    { status }
+  );
+}
+
 export async function GET(request: NextRequest) {
   const { searchParams } = new URL(request.url);
   const lat = parseFloat(searchParams.get('lat') || '0');
@@ -13,16 +33,20 @@ export async function GET(request: NextRequest) {
   const hours = parseInt(searchParams.get('hours') || '24', 10);
 
   if (!isValidCoordinate(lat, lng)) {
-    return NextResponse.json(
-      { error: '無效的坐標參數' },
-      { status: 400 }
+    return buildErrorResponse(
+      '無效的坐標參數',
+      'Invalid coordinate parameters',
+      400,
+      { lat, lng }
     );
   }
 
   if (Number.isNaN(hours) || hours < 1 || hours > 96) {
-    return NextResponse.json(
-      { error: '預測時數必須在 1-96 小時之間' },
-      { status: 400 }
+    return buildErrorResponse(
+      '預測時數必須在 1-96 小時之間',
+      'Forecast hours must be between 1 and 96',
+      400,
+      { hours }
     );
   }
 
@@ -36,15 +60,21 @@ export async function GET(request: NextRequest) {
       },
     });
   } catch (error) {
-    const message = error instanceof Error ? error.message : '伺服器錯誤';
+    const messageZh = error instanceof Error ? error.message : '伺服器錯誤';
 
-    if (message.includes('暫無')) {
-      return NextResponse.json({ error: message, lat, lng }, { status: 404 });
+    if (messageZh.includes('暫無')) {
+      return buildErrorResponse(
+        messageZh,
+        'No forecast data available for the requested coordinates',
+        404,
+        { lat, lng }
+      );
     }
 
-    return NextResponse.json(
-      { error: message },
-      { status: 500 }
+    return buildErrorResponse(
+      messageZh,
+      'Server error. Please try again later.',
+      500
     );
   }
 }
