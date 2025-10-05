@@ -1,8 +1,8 @@
 'use client';
 
-import React, { useMemo, useState } from 'react';
+import React, { useEffect, useMemo, useState } from 'react';
 import { AQIData } from '@/types';
-import { ForecastResponse } from '@/hooks/useAirQualityForecast';
+import { ForecastResponse } from '@/types/forecast';
 
 const POLLUTANT_CONFIG: Record<
   string,
@@ -20,17 +20,12 @@ const POLLUTANT_CONFIG: Record<
   so2: { label: 'SO₂', color: '#22c55e', max: 75, units: 'ppb' },
 };
 
-type FingerprintSample = {
-  code: string;
-  value: number;
-  units: string;
-};
-
 interface PollutantFingerprintPanelProps {
   currentData: AQIData | null;
   forecastData: ForecastResponse | null;
   loading?: boolean;
   error?: string | null;
+  className?: string;
 }
 
 const polarToCartesian = (value: number, angle: number, radius: number) => {
@@ -46,23 +41,42 @@ const normalizeValue = (code: string, value: number) => {
   return Math.min(value / max, 1);
 };
 
+const normalizePollutantCode = (code: string) => code.trim().toLowerCase();
+
 const PollutantFingerprintPanel: React.FC<PollutantFingerprintPanelProps> = ({
   currentData,
   forecastData,
   loading = false,
   error,
+  className,
 }) => {
   const [selectedIndex, setSelectedIndex] = useState(3);
+
+  const sliderMax = useMemo(
+    () => Math.max((forecastData?.hourlyForecasts?.length ?? 1) - 1, 0),
+    [forecastData]
+  );
+
+  useEffect(() => {
+    setSelectedIndex((prev) => {
+      const clamped = Math.min(Math.max(prev, 0), sliderMax);
+      return clamped;
+    });
+  }, [sliderMax]);
 
   const currentSamples = useMemo(() => {
     if (!currentData?.pollutants) return [];
     return currentData.pollutants
-      .filter((p) => POLLUTANT_CONFIG[p.code])
-      .map((p) => ({
-        code: p.code,
-        value: p.concentration.value,
-        units: p.concentration.units,
-      }));
+      .map((p) => {
+        const code = normalizePollutantCode(p.code);
+        if (!POLLUTANT_CONFIG[code]) return null;
+        return {
+          code,
+          value: p.concentration.value,
+          units: p.concentration.units,
+        };
+      })
+      .filter((item): item is { code: string; value: number; units: string } => Boolean(item));
   }, [currentData]);
 
   const forecastSamples = useMemo(() => {
@@ -77,12 +91,16 @@ const PollutantFingerprintPanel: React.FC<PollutantFingerprintPanelProps> = ({
     const pollutants = slot.pollutants ?? [];
 
     return pollutants
-      .filter((p) => POLLUTANT_CONFIG[p.code])
-      .map((p) => ({
-        code: p.code,
-        value: p.concentration.value,
-        units: p.concentration.units,
-      }));
+      .map((p) => {
+        const code = normalizePollutantCode(p.code);
+        if (!POLLUTANT_CONFIG[code]) return null;
+        return {
+          code,
+          value: p.concentration.value,
+          units: p.concentration.units,
+        };
+      })
+      .filter((item): item is { code: string; value: number; units: string } => Boolean(item));
   }, [forecastData, selectedIndex]);
 
   const mergedCodes = useMemo(() => {
@@ -136,14 +154,24 @@ const PollutantFingerprintPanel: React.FC<PollutantFingerprintPanelProps> = ({
     if (!forecastData?.hourlyForecasts) return [];
     return forecastData.hourlyForecasts.slice(0, 24).map((slot) => ({
       time: new Date(slot.dateTime),
-      pollutants: slot.pollutants?.filter((p) => POLLUTANT_CONFIG[p.code]) ?? [],
+      pollutants:
+        slot.pollutants?.map((p) => ({
+          code: normalizePollutantCode(p.code),
+          concentration: p.concentration,
+        })) ?? [],
       aqi: slot.indexes?.[0]?.aqi ?? 0,
     }));
   }, [forecastData]);
 
+  const selectedForecast = useMemo(() => {
+    if (!forecastData?.hourlyForecasts?.length) return null;
+    const clampedIndex = Math.min(Math.max(selectedIndex, 0), sliderMax);
+    return forecastData.hourlyForecasts[clampedIndex] ?? null;
+  }, [forecastData, selectedIndex, sliderMax]);
+
   if (loading) {
     return (
-      <div className="bg-white rounded-3xl shadow-xl p-6 animate-pulse w-full max-w-4xl">
+      <div className={`bg-white rounded-3xl shadow-xl p-6 animate-pulse w-full max-w-4xl ${className ?? ''}`}>
         <div className="h-6 bg-gray-200 rounded w-48 mb-4" />
         <div className="h-64 bg-gray-200 rounded-xl" />
       </div>
@@ -152,7 +180,7 @@ const PollutantFingerprintPanel: React.FC<PollutantFingerprintPanelProps> = ({
 
   if (error) {
     return (
-      <div className="bg-white rounded-3xl shadow-xl p-6 text-red-500">
+      <div className={`bg-white rounded-3xl shadow-xl p-6 text-red-500 ${className ?? ''}`}>
         ⚠️ 無法載入污染指紋：{error}
       </div>
     );
@@ -160,14 +188,14 @@ const PollutantFingerprintPanel: React.FC<PollutantFingerprintPanelProps> = ({
 
   if (!mergedCodes.length) {
     return (
-      <div className="bg-white rounded-3xl shadow-xl p-6 text-gray-500">
+      <div className={`bg-white rounded-3xl shadow-xl p-6 text-gray-500 ${className ?? ''}`}>
         暫無污染物細節，將在資料更新後顯示雷達圖。
       </div>
     );
   }
 
   return (
-    <div className="bg-white/95 backdrop-blur-md rounded-3xl shadow-2xl p-6 w-full max-w-5xl">
+    <div className={`bg-white/95 backdrop-blur-md rounded-3xl shadow-2xl p-6 w-full max-w-5xl ${className ?? ''}`}>
       <div className="flex flex-col md:flex-row md:items-start md:justify-between gap-4 mb-6">
         <div>
           <h3 className="text-2xl font-bold text-gray-800">🧬 污染類型指紋</h3>
@@ -175,7 +203,7 @@ const PollutantFingerprintPanel: React.FC<PollutantFingerprintPanelProps> = ({
             將目前污染輪廓與未來時段比較，辨識最具威脅的污染物。
           </p>
         </div>
-        <div className="flex items-center gap-2 text-sm">
+        <div className="flex flex-wrap items-center gap-2 text-sm">
           <span className="inline-flex items-center gap-1">
             <span className="w-3 h-3 rounded-full bg-emerald-500/60" />
             現在
@@ -189,7 +217,7 @@ const PollutantFingerprintPanel: React.FC<PollutantFingerprintPanelProps> = ({
 
       <div className="grid grid-cols-1 lg:grid-cols-[320px_1fr] gap-6">
         <div className="relative">
-          <svg viewBox="0 0 220 220" className="w-full h-auto">
+          <svg viewBox="0 0 220 220" className="w-full h-auto overflow-visible">
             {[1, 0.75, 0.5, 0.25].map((ratio) => (
               <circle
                 key={ratio}
@@ -231,6 +259,7 @@ const PollutantFingerprintPanel: React.FC<PollutantFingerprintPanelProps> = ({
                   x={labelPos.x + 10}
                   y={labelPos.y + 10}
                   textAnchor="middle"
+                  dominantBaseline="middle"
                   className="text-xs fill-gray-600"
                 >
                   {config?.label ?? code.toUpperCase()}
@@ -242,13 +271,11 @@ const PollutantFingerprintPanel: React.FC<PollutantFingerprintPanelProps> = ({
 
         <div className="space-y-6">
           <div className="bg-slate-50 border border-slate-100 rounded-2xl p-4">
-            <div className="flex items-center justify-between text-sm text-slate-600 mb-2">
+            <div className="flex flex-wrap items-center justify-between gap-2 text-sm text-slate-600 mb-2">
               <span>對比時段</span>
-              <span>
-                {forecastData?.hourlyForecasts?.[selectedIndex]?.dateTime
-                  ? new Date(
-                      forecastData.hourlyForecasts[selectedIndex].dateTime
-                    ).toLocaleString('zh-TW', {
+              <span className="rounded-full bg-white px-2 py-0.5 text-xs font-semibold text-indigo-600">
+                {selectedForecast?.dateTime
+                  ? new Date(selectedForecast.dateTime).toLocaleString('zh-TW', {
                       hour: '2-digit',
                       minute: '2-digit',
                     })
@@ -258,7 +285,7 @@ const PollutantFingerprintPanel: React.FC<PollutantFingerprintPanelProps> = ({
             <input
               type="range"
               min={0}
-              max={Math.max((forecastData?.hourlyForecasts?.length ?? 1) - 1, 0)}
+              max={sliderMax}
               value={selectedIndex}
               onChange={(event) => setSelectedIndex(Number(event.target.value))}
               className="w-full accent-indigo-500"
@@ -348,7 +375,7 @@ const Sparkline: React.FC<{
       {data.map((item, index) => {
         const x = (index / Math.max(data.length - 1, 1)) * (width - 20) + 10;
         const y = height - (item.value / maxValue) * (height - 20) - 10;
-        return <circle key={item.time.getTime()} cx={x} cy={y} r={2} fill={color} />;
+        return <circle key={`${item.time.getTime()}-${index}`} cx={x} cy={y} r={2} fill={color} />;
       })}
     </svg>
   );

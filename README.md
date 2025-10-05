@@ -1,6 +1,35 @@
 # AeroSense - 空氣品質決策系統 🌤️
+### 🎯 核心功能
+1. **🗺️ 即時空氣品質地圖**
+   - 互動式地圖介面
+   - 熱力圖層顯示區域污染分布
+   - 自動定位 (GPS/IP)
 
-基於 **Google Air Quality API**、**Google Maps** 和 **Next.js** 構建的即時空氣品質監測與智能決策平台。
+2. **🔮 AI 空氣品質預測**
+   - 未來 24 小時預測
+   - 信心度評分 (高/中/低)
+   - 波動性分析
+
+3. **🎯 活動決策系統** ⭐ 
+   - 5 種常見戶外活動風險評估
+   - 個人化建議與最佳時段推薦
+   - 基於污染物組成的智能評分
+
+4. **🎯 Scenario Studio（情境實驗室）** ⭐ 新功能
+   - 24 小時活動劇本生成
+   - 自動尋找附近場域（公園、運動中心等）
+   - AI 智能建議（支援 Vertex AI Gemini 與 fallback）
+   - 視覺化時間軸與風險燈號
+
+5. **🚇 Commute Guardian（通勤守護）**
+   - 路線 AQI 批次取樣
+   - 安全/警示/危險顏色分級
+   - 多路線比較與建議
+
+6. **💚 健康建議**
+   - 針對不同族群的個人化建議
+   - 口罩配戴建議
+   - 症狀警示lity API**、**Google Maps** 和 **Next.js** 構建的即時空氣品質監測與智能決策平台。
 
 > 📘 **完整文檔**: 
 > - [**Stage 1 完成總結 (stage1-completion-summary.md)**](.docs/stage1-completion-summary.md) - ✅ 核心任務完成 ⭐
@@ -51,6 +80,11 @@ AeroSense 不只是空氣品質監測工具，更是您的**戶外活動智能�
 - **科學基礎**: 基於污染物權重的硬編碼 RiskScore 算法
 - **用戶友善**: 直觀的風險燈號與卡片 UI
 - **智能推薦**: 自動尋找最佳活動時間窗口
+
+### 🆕 創新互動
+- **社群「發起討論」按鈕**：整合 Twitter/Facebook 分享參數，一鍵擴散 NASA EarthData 洞察。
+- **AI 媒體中心**：LLM Agent 將資料轉譯成科學家、市長、民眾三層摘要。
+- **行動倒數計時**：以集體目標與進度條遊戲化，催化公民行動。
 
 ## 🎯 核心設計
 
@@ -149,11 +183,27 @@ npm install
 # Google Maps API Key (會暴露到前端，用於地圖初始化)
 NEXT_PUBLIC_GOOGLE_MAPS_API_KEY=your_maps_api_key_here
 
-# Google Air Quality API Key (僅伺服器端使用，不會暴露)
-GOOGLE_AIR_QUALITY_API_KEY=your_air_quality_api_key_here
+# 分享入口網址（若未設定，預設使用 window.location.href）
+NEXT_PUBLIC_APP_SHARE_URL=https://your-app-url
+
+# 行動倒數模擬參數（可選）
+NEXT_PUBLIC_ACTION_GOAL=1000
+NEXT_PUBLIC_ACTION_INITIAL=120
+NEXT_PUBLIC_ACTION_SIMULATE=true
+
+# Google API Key（伺服器端使用：Air Quality、Places、Directions、Geocode 等）
+GOOGLE_API_KEY=your_google_api_key_here
+
+# OpenAI Key（多級別摘要 Agent）
+OPENAI_API_KEY=your_openai_key_here
+# 可選：自訂使用模型
+OPENAI_BRIEFING_MODEL=gpt-4o-mini
 
 # 環境
 NODE_ENV=development
+```
+
+> 如需啟用 Scenario Studio 的 Gemini 建議，額外設定 `GOOGLE_GEMINI_API_KEY`、`GOOGLE_CLOUD_PROJECT_ID` 與 `GOOGLE_CLOUD_LOCATION`。
 ```
 
 > 💡 **提示**: 可以參考 `.env.example` 文件
@@ -174,6 +224,15 @@ NODE_ENV=development
 2. 啟用 **Air Quality API**
 3. 可以使用同一個 API Key 或創建新的
 4. 設置適當的配額限制
+
+#### Google Gemini API Key（可選）
+
+如果要使用 Scenario Studio 的 AI 智能建議功能：
+
+1. 訪問 [Google AI Studio](https://makersuite.google.com/app/apikey)
+2. 創建 API Key
+3. 設置為 `GOOGLE_GEMINI_API_KEY` 環境變數
+4. 如果不設置，系統會自動使用 fallback 模板建議
 
 詳細設置指南：[API 實現範例](.docs/api-implementation-example.md)
 
@@ -322,6 +381,15 @@ curl "http://localhost:3000/api/air-quality/current?lat=24.23321&lng=120.9417"
 - [x] 健康建議系統
 - [x] 熱力圖層
 - [x] 快取機制
+
+### ✅ Stage 2 - F1, F2, F3 已完成
+- [x] Mission Control（AQI 決策主控台）
+- [x] Commute Guardian（安全通勤守護）
+- [x] Scenario Studio（情境實驗室）⭐ 新功能
+  - [x] 24 小時活動劇本生成
+  - [x] Places API 場域搜尋整合
+  - [x] AI 智能建議（Gemini API + Fallback）
+  - [x] 視覺化時間軸組件
 
 ### 🚧 Stage 1 - 待啟動 (P1 任務)
 - [ ] FINGERPRINT-VIZ - 污染物雷達圖與趨勢迷你圖

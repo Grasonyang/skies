@@ -1,13 +1,14 @@
 'use client';
 
 import React from 'react';
-import { ForecastResponse } from '@/hooks/useAirQualityForecast';
+import { ForecastResponse } from '@/types/forecast';
 import { getAQILevel } from '@/lib/utils';
 
 interface ForecastPanelProps {
   data: ForecastResponse | null;
   loading: boolean;
   error: string | null;
+  className?: string;
 }
 
 /**
@@ -19,10 +20,14 @@ const ForecastPanel: React.FC<ForecastPanelProps> = ({
   data,
   loading,
   error,
+  className,
 }) => {
+  const mainContainerClasses = `bg-white/90 backdrop-blur-sm rounded-2xl shadow-2xl p-6 w-full max-w-2xl ${className ?? ''}`;
+  const subtleContainerClasses = `bg-white/90 backdrop-blur-sm rounded-2xl shadow-2xl p-4 w-full ${className ?? ''}`;
+
   if (loading) {
     return (
-      <div className="bg-white/90 backdrop-blur-sm rounded-2xl shadow-2xl p-4 w-full">
+      <div className={subtleContainerClasses}>
         <div className="flex items-center gap-3">
           <div className="animate-spin h-5 w-5 border-2 border-blue-500 border-t-transparent rounded-full"></div>
           <h3 className="text-base font-bold text-gray-800">載入預測...</h3>
@@ -33,7 +38,7 @@ const ForecastPanel: React.FC<ForecastPanelProps> = ({
 
   if (error) {
     return (
-      <div className="bg-white/90 backdrop-blur-sm rounded-2xl shadow-2xl p-4 w-full">
+      <div className={subtleContainerClasses}>
         <div className="flex items-start gap-3">
           <span className="text-xl">⚠️</span>
           <div>
@@ -88,7 +93,7 @@ const ForecastPanel: React.FC<ForecastPanelProps> = ({
     : null;
 
   return (
-    <div className="bg-white/90 backdrop-blur-sm rounded-2xl shadow-2xl p-6 w-full max-w-2xl">
+    <div className={mainContainerClasses}>
       {/* 標題 */}
       <div className="flex items-center justify-between mb-4">
         <h3 className="text-lg font-bold text-gray-800 flex items-center gap-2">

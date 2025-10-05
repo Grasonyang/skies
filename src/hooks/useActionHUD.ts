@@ -1,6 +1,6 @@
 import { useMemo } from 'react';
 import { AQIData } from '@/types';
-import { ForecastResponse } from '@/hooks/useAirQualityForecast';
+import { ForecastResponse } from '@/types/forecast';
 import {
   DecisionEngineL1,
   ActivityDecision,

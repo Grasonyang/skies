@@ -1,41 +1,5 @@
-import { useState, useEffect } from 'react';
-
-export interface ForecastData {
-  dateTime: string;
-  indexes: Array<{
-    code: string;
-    aqi: number;
-    category: string;
-    dominantPollutant: string;
-  }>;
-  pollutants?: Array<{
-    code: string;
-    displayName: string;
-    concentration: {
-      value: number;
-      units: string;
-    };
-  }>;
-}
-
-export interface ForecastMeta {
-  baseAqi: number;
-  averageAqi: number;
-  confidenceScore: number;
-  confidenceLevel: '高' | '中' | '低';
-  confidenceDescription: string;
-  volatility: number;
-  method: string;
-}
-
-export interface ForecastResponse {
-  hourlyForecasts: ForecastData[];
-  location: {
-    latitude: number;
-    longitude: number;
-  };
-  meta?: ForecastMeta;
-}
+import { useState, useEffect, useCallback } from 'react';
+import { ForecastResponse } from '@/types/forecast';
 
 interface UseAirQualityForecastProps {
   lat: number;
@@ -76,7 +40,7 @@ export function useAirQualityForecast({
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  const fetchForecast = async () => {
+  const fetchForecast = useCallback(async () => {
     if (!enabled || !lat || !lng) return;
 
     setLoading(true);
@@ -101,11 +65,11 @@ export function useAirQualityForecast({
     } finally {
       setLoading(false);
     }
-  };
+  }, [enabled, hours, lat, lng]);
 
   useEffect(() => {
     fetchForecast();
-  }, [lat, lng, hours, enabled]);
+  }, [fetchForecast]);
 
   return {
     data,

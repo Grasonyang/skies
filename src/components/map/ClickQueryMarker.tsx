@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useEffect, useState } from 'react';
-import { useMap, AdvancedMarker, Pin } from '@vis.gl/react-google-maps';
+import { useMap, AdvancedMarker, Marker, Pin } from '@vis.gl/react-google-maps';
 import { AQIData } from '@/types';
 import { getAQILevel } from '@/lib/utils';
 
@@ -31,6 +31,14 @@ const ClickQueryMarker: React.FC<ClickQueryMarkerProps> = ({
   } | null>(null);
 
   useEffect(() => {
+    if (currentQuery) {
+      setClickedLocation(currentQuery);
+    } else {
+      setClickedLocation(null);
+    }
+  }, [currentQuery]);
+
+  useEffect(() => {
     if (!map) return;
 
     // 監聽地圖點擊事件
@@ -44,6 +52,13 @@ const ClickQueryMarker: React.FC<ClickQueryMarkerProps> = ({
         console.log('🖱️ 地圖點擊:', location);
         setClickedLocation(location);
         onLocationClick(location);
+
+        // 將地圖移至點擊位置並帶入適中縮放
+        map.panTo(location);
+        const currentZoom = map.getZoom() ?? 13;
+        if (currentZoom < 13) {
+          map.setZoom(13);
+        }
       }
     });
 
@@ -63,6 +78,30 @@ const ClickQueryMarker: React.FC<ClickQueryMarkerProps> = ({
   // 獲取 AQI 等級資訊
   const aqiLevel = aqiData ? getAQILevel(aqiData.aqi) : null;
   const pinColor = aqiLevel?.color || '#3b82f6';
+
+  const supportsAdvancedMarker = Boolean(process.env.NEXT_PUBLIC_GOOGLE_MAP_ID);
+
+  if (!supportsAdvancedMarker) {
+    const icon = typeof window !== 'undefined' && (window as typeof window & { google?: typeof google }).google
+      ? {
+          path: google.maps.SymbolPath.CIRCLE,
+          scale: 10,
+          fillColor: pinColor,
+          fillOpacity: 1,
+          strokeColor: '#ffffff',
+          strokeWeight: 2,
+        }
+      : undefined;
+
+    return (
+      <Marker
+        position={markerLocation}
+        label={aqiData ? `${aqiData.aqi}` : undefined}
+        title={aqiData ? `AQI ${aqiData.aqi}` : '模擬查詢位置'}
+        icon={icon}
+      />
+    );
+  }
 
   return (
     <AdvancedMarker position={markerLocation}>

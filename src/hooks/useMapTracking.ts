@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback, useRef } from 'react';
+import { useState, useEffect, useCallback, useRef, useMemo } from 'react';
 import { useMap } from '@vis.gl/react-google-maps';
 import { debounce } from '@/lib/utils';
 
@@ -96,12 +96,11 @@ export function useMapTracking(options: MapTrackingOptions = {}) {
   }, [map, minZoomForAutoQuery, maxZoomForAutoQuery, onMapMove, onZoomChange]);
 
   // 防抖處理的更新函數
-  const debouncedUpdate = useCallback(
+  const debouncedUpdate = useMemo(() =>
     debounce(() => {
       updateMapState();
     }, debounceTime),
-    [updateMapState, debounceTime]
-  );
+  [updateMapState, debounceTime]);
 
   // 監聽地圖事件
   useEffect(() => {
@@ -193,7 +192,7 @@ export function useMapTracking(options: MapTrackingOptions = {}) {
    * 獲取建議的網格大小（根據縮放級別）
    */
   const getRecommendedGridSize = useCallback((): number => {
-    const { zoom } = mapState;
+    const zoom = mapState.zoom;
 
     if (zoom < 12) return 0; // 不查詢
     if (zoom >= 12 && zoom <= 13) return 3; // 3x3 = 9 次查詢

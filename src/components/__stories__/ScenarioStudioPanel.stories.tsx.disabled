@@ -1,0 +1,263 @@
+/**
+ * ScenarioStudioPanel Storybook Stories
+ * 
+ * ⚠️ 此文件暫時停用 - Storybook 未安裝
+ * 
+ * 要啟用此文件：
+ * 1. 安裝 Storybook: npx storybook@latest init
+ * 2. 取消註解下方的程式碼
+ * 3. 執行: npm run storybook
+ * 
+ * 詳細說明請參考：.docs/dev-tools-setup.md
+ */
+
+// @ts-nocheck
+/* eslint-disable */
+
+// 暫時註解以避免編譯錯誤
+// import type { Meta, StoryObj } from '@storybook/react';
+// import { ScenarioStudioPanel, ScenarioTimeline } from '../ScenarioStudioPanel';
+// import { ScenarioAnalysis } from '@/hooks/useScenarioStudio';
+
+export {}; // 保持文件為模組
+
+const meta: Meta<typeof ScenarioStudioPanel> = {
+  title: 'Components/ScenarioStudioPanel',
+  component: ScenarioStudioPanel,
+  parameters: {
+    layout: 'fullscreen',
+  },
+  tags: ['autodocs'],
+};
+
+export default meta;
+type Story = StoryObj<typeof ScenarioStudioPanel>;
+
+// Mock 情境資料
+const mockScenario: ScenarioAnalysis = {
+  activity: '戶外跑步',
+  location: {
+    name: '大安森林公園',
+    location: { lat: 25.033964, lng: 121.543987 },
+    types: ['park'],
+    address: '台北市大安區新生南路二段1號',
+    rating: 4.5,
+  },
+  timeSlots: [
+    {
+      time: '00:00',
+      dateTime: '2025-01-15T00:00:00Z',
+      aqi: 45,
+      category: 'EXCELLENT',
+      dominantPollutant: 'pm25',
+      riskLevel: 'safe',
+    },
+    {
+      time: '03:00',
+      dateTime: '2025-01-15T03:00:00Z',
+      aqi: 52,
+      category: 'MODERATE',
+      dominantPollutant: 'pm25',
+      riskLevel: 'safe',
+    },
+    {
+      time: '06:00',
+      dateTime: '2025-01-15T06:00:00Z',
+      aqi: 68,
+      category: 'MODERATE',
+      dominantPollutant: 'pm25',
+      riskLevel: 'safe',
+    },
+    {
+      time: '09:00',
+      dateTime: '2025-01-15T09:00:00Z',
+      aqi: 85,
+      category: 'MODERATE',
+      dominantPollutant: 'pm25',
+      riskLevel: 'safe',
+    },
+    {
+      time: '12:00',
+      dateTime: '2025-01-15T12:00:00Z',
+      aqi: 110,
+      category: 'UNHEALTHY_FOR_SENSITIVE_GROUPS',
+      dominantPollutant: 'o3',
+      riskLevel: 'warning',
+    },
+    {
+      time: '15:00',
+      dateTime: '2025-01-15T15:00:00Z',
+      aqi: 125,
+      category: 'UNHEALTHY_FOR_SENSITIVE_GROUPS',
+      dominantPollutant: 'o3',
+      riskLevel: 'warning',
+    },
+    {
+      time: '18:00',
+      dateTime: '2025-01-15T18:00:00Z',
+      aqi: 95,
+      category: 'MODERATE',
+      dominantPollutant: 'pm25',
+      riskLevel: 'safe',
+    },
+    {
+      time: '21:00',
+      dateTime: '2025-01-15T21:00:00Z',
+      aqi: 72,
+      category: 'MODERATE',
+      dominantPollutant: 'pm25',
+      riskLevel: 'safe',
+    },
+  ],
+  bestTimeSlot: {
+    time: '00:00',
+    dateTime: '2025-01-15T00:00:00Z',
+    aqi: 45,
+    category: 'EXCELLENT',
+    dominantPollutant: 'pm25',
+    riskLevel: 'safe',
+  },
+  worstTimeSlot: {
+    time: '15:00',
+    dateTime: '2025-01-15T15:00:00Z',
+    aqi: 125,
+    category: 'UNHEALTHY_FOR_SENSITIVE_GROUPS',
+    dominantPollutant: 'o3',
+    riskLevel: 'warning',
+  },
+  averageAqi: 82,
+  recommendation: `針對「戶外跑步」活動分析：
+
+**最佳時段**：凌晨 00:00，此時空氣品質優良（AQI 45），適合進行戶外運動。建議選擇清晨或夜間時段。
+
+**健康風險**：當前風險等級為中等，午後時段（12:00-15:00）臭氧濃度上升，敏感族群應避免高強度運動。
+
+**防護措施**：建議攜帶水壺保持水分，避免在正午時段進行劇烈運動。如有不適應立即停止活動。`,
+  loading: false,
+};
+
+const mockScenarioWithHighAQI: ScenarioAnalysis = {
+  ...mockScenario,
+  activity: '親子公園',
+  location: {
+    name: '信義廣場',
+    location: { lat: 25.033, lng: 121.565 },
+    types: ['park', 'playground'],
+    address: '台北市信義區市府路1號',
+  },
+  timeSlots: mockScenario.timeSlots.map((slot) => ({
+    ...slot,
+    aqi: slot.aqi + 80,
+    riskLevel: slot.aqi + 80 > 150 ? ('danger' as const) : ('warning' as const),
+  })),
+  averageAqi: 162,
+  bestTimeSlot: {
+    ...mockScenario.bestTimeSlot!,
+    aqi: 125,
+    riskLevel: 'warning',
+  },
+  worstTimeSlot: {
+    ...mockScenario.worstTimeSlot!,
+    aqi: 205,
+    riskLevel: 'danger',
+  },
+  recommendation: `針對「親子公園」活動分析：
+
+**最佳時段**：凌晨時段空氣品質較佳，但仍建議延後活動。當前整體空氣品質不佳（平均 AQI 162）。
+
+**健康風險**：風險等級為高，建議改為室內活動。如需外出請大幅縮短活動時間，敏感族群和兒童應避免外出。
+
+**防護措施**：務必配戴 N95 口罩，避免高強度活動，持續關注空氣品質變化。建議改為室內親子活動。`,
+};
+
+export const Default: Story = {
+  args: {
+    scenarios: [],
+    loading: false,
+    error: null,
+  },
+};
+
+export const Loading: Story = {
+  args: {
+    scenarios: [],
+    loading: true,
+    error: null,
+  },
+};
+
+export const WithError: Story = {
+  args: {
+    scenarios: [],
+    loading: false,
+    error: '無法獲取場域資訊，請檢查網路連線',
+  },
+};
+
+export const WithSingleScenario: Story = {
+  args: {
+    scenarios: [mockScenario],
+    loading: false,
+    error: null,
+  },
+};
+
+export const WithMultipleScenarios: Story = {
+  args: {
+    scenarios: [mockScenario, mockScenarioWithHighAQI],
+    loading: false,
+    error: null,
+  },
+};
+
+export const ScenarioLoading: Story = {
+  args: {
+    scenarios: [
+      {
+        ...mockScenario,
+        loading: true,
+        recommendation: undefined,
+      },
+    ],
+    loading: false,
+    error: null,
+  },
+};
+
+// ScenarioTimeline 單獨的 stories
+export const TimelineDefault: StoryObj<typeof ScenarioTimeline> = {
+  args: {
+    scenario: mockScenario,
+  },
+  render: (args: { scenario: ScenarioAnalysis }) => (
+    <div className="w-full max-w-4xl p-6 bg-gray-50">
+      <ScenarioTimeline {...args} />
+    </div>
+  ),
+};
+
+export const TimelineHighAQI: StoryObj<typeof ScenarioTimeline> = {
+  args: {
+    scenario: mockScenarioWithHighAQI,
+  },
+  render: (args: { scenario: ScenarioAnalysis }) => (
+    <div className="w-full max-w-4xl p-6 bg-gray-50">
+      <ScenarioTimeline {...args} />
+    </div>
+  ),
+};
+
+export const TimelineLoadingRecommendation: StoryObj<typeof ScenarioTimeline> = {
+  args: {
+    scenario: {
+      ...mockScenario,
+      loading: true,
+      recommendation: undefined,
+    },
+  },
+  render: (args: { scenario: ScenarioAnalysis }) => (
+    <div className="w-full max-w-4xl p-6 bg-gray-50">
+      <ScenarioTimeline {...args} />
+    </div>
+  ),
+};

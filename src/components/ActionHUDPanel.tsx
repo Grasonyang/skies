@@ -2,7 +2,7 @@
 
 import React from 'react';
 import { AQIData } from '@/types';
-import { ForecastResponse } from '@/hooks/useAirQualityForecast';
+import { ForecastResponse } from '@/types/forecast';
 import { useActionHUD } from '@/hooks/useActionHUD';
 
 interface ActionHUDPanelProps {
@@ -10,6 +10,7 @@ interface ActionHUDPanelProps {
   forecastData: ForecastResponse | null;
   loading?: boolean;
   onFeedback?: () => void;
+  onStartDiscussion?: () => void;
   className?: string;
 }
 
@@ -25,6 +26,7 @@ const ActionHUDPanel: React.FC<ActionHUDPanelProps> = ({
   forecastData,
   loading = false,
   onFeedback,
+  onStartDiscussion,
   className,
 }) => {
   const { suggestions, dominantRisk } = useActionHUD({ aqiData, forecastData });
@@ -79,6 +81,14 @@ const ActionHUDPanel: React.FC<ActionHUDPanelProps> = ({
                 className="px-3 py-1 rounded-full bg-emerald-50 text-emerald-600 border border-emerald-200"
               >
                 給我建議
+              </button>
+            )}
+            {onStartDiscussion && (
+              <button
+                onClick={onStartDiscussion}
+                className="px-3 py-1 rounded-full bg-indigo-50 text-indigo-600 border border-indigo-200"
+              >
+                發起討論
               </button>
             )}
           </div>

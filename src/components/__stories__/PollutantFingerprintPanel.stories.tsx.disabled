@@ -1,6 +1,15 @@
+/**
+ * ⚠️ 此文件暫時停用 - Storybook 未安裝
+ * 請參考：.docs/dev-tools-setup.md
+ */
+
 // @ts-nocheck
-import type { Meta, StoryObj } from '@storybook/react';
-import PollutantFingerprintPanel from '../PollutantFingerprintPanel';
+/* eslint-disable */
+
+// import type { Meta, StoryObj } from '@storybook/react';
+// import PollutantFingerprintPanel from '../PollutantFingerprintPanel';
+
+export {};
 
 const meta: Meta<typeof PollutantFingerprintPanel> = {
   title: 'AeroSense/PollutantFingerprintPanel',

@@ -11,6 +11,7 @@ import {
 
 interface HealthRecommendationPanelProps {
   aqiData: AQIData | null;
+  className?: string;
 }
 
 const USER_GROUP_OPTIONS = [
@@ -26,7 +27,7 @@ const USER_GROUP_OPTIONS = [
  * 
  * 提供基於用戶族群的個人化健康建議
  */
-const HealthRecommendationPanel: React.FC<HealthRecommendationPanelProps> = ({ aqiData }) => {
+const HealthRecommendationPanel: React.FC<HealthRecommendationPanelProps> = ({ aqiData, className }) => {
   const [selectedGroup, setSelectedGroup] = useState<UserGroup>(UserGroup.GENERAL);
   const [isExpanded, setIsExpanded] = useState(false);
 
@@ -47,8 +48,10 @@ const HealthRecommendationPanel: React.FC<HealthRecommendationPanelProps> = ({ a
     hazardous: 'bg-purple-100 text-purple-800 border-purple-300',
   };
 
+  const containerClasses = `bg-white/95 backdrop-blur-sm rounded-2xl shadow-2xl p-4 w-full max-h-96 overflow-y-auto ${className ?? ''}`;
+
   return (
-    <div className="bg-white/95 backdrop-blur-sm rounded-2xl shadow-2xl p-4 w-full max-h-96 overflow-y-auto">
+    <div className={containerClasses}>
       {/* 標題 */}
       <div className="flex items-center justify-between mb-3">
         <div className="flex items-center gap-2">
