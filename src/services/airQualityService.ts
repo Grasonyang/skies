@@ -3,14 +3,8 @@ import { ForecastResponse } from '@/types/forecast';
 import { cacheService } from './cacheService';
 import { getCacheKey } from '@/lib/utils';
 
-// Helper to construct the base URL for API calls
-const getBaseUrl = () => {
-  if (process.env.VERCEL_URL) {
-    return `https://${process.env.VERCEL_URL}`;
-  }
-  return 'http://localhost:3000';
-};
-
+const GOOGLE_MAPS_API_KEY = process.env.GOOGLE_MAPS_API_KEY;
+const AIR_QUALITY_API_URL = 'https://airquality.googleapis.com/v1/currentConditions:lookup';
 
 /**
  * Google Air Quality API 服務
@@ -19,7 +13,7 @@ class AirQualityService {
   private useMockData: boolean;
 
   constructor() {
-    this.useMockData = !process.env.GOOGLE_MAPS_API_KEY;
+    this.useMockData = !GOOGLE_MAPS_API_KEY;
 
     if (this.useMockData) {
       console.warn('⚠️ GOOGLE_MAPS_API_KEY 未設定，將改用模擬的空氣品質數據');
@@ -27,7 +21,7 @@ class AirQualityService {
   }
 
   /**
-   * 獲取當前空氣品質數據（帶重試機制）
+   * 獲取當前空氣品質數據（直接調用 Google API）
    */
   async getCurrentConditions(
     lat: number,
@@ -38,15 +32,49 @@ class AirQualityService {
     }
 
     try {
-        const baseUrl = getBaseUrl();
-        const response = await fetch(`${baseUrl}/api/air-quality/current?lat=${lat}&lng=${lng}`);
-        if(!response.ok) {
-            return null;
+      const cacheKey = getCacheKey(lat, lng);
+      const cached = await cacheService.get<AQIData>(cacheKey);
+
+      if (cached) {
+        return cached;
+      }
+
+      console.log(`🌐 調用 Google API: (${lat}, ${lng})`);
+      const response = await fetch(`${AIR_QUALITY_API_URL}?key=${GOOGLE_MAPS_API_KEY}`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          location: {
+            latitude: lat,
+            longitude: lng,
+          },
+          extraComputations: [
+            'HEALTH_RECOMMENDATIONS',
+            'DOMINANT_POLLUTANT_CONCENTRATION',
+            'POLLUTANT_CONCENTRATION',
+            'POLLUTANT_ADDITIONAL_INFO',
+            'LOCAL_AQI',
+          ],
+          languageCode: 'zh-TW',
+        }),
+      });
+
+      if (!response.ok) {
+        if (response.status === 404) {
+          console.warn(`⚠️ 該地區暫無空氣品質數據: (${lat}, ${lng})`);
+          return null;
         }
+        throw new Error(`API 請求失敗: ${response.status} ${response.statusText}`);
+      }
 
-        const data = await response.json();
-        return data;
+      const apiData = await response.json();
+      const data = this.transformResponse(apiData, lat, lng);
 
+      await cacheService.set(cacheKey, data);
+
+      return data;
     } catch (error) {
       console.error('❌ 獲取空氣品質數據失敗:', error);
       if (error instanceof Error) {
@@ -55,8 +83,60 @@ class AirQualityService {
           console.error('錯誤原因:', error.cause);
         }
       }
-      throw error;
+      return null;
     }
+  }
+
+  /**
+   * 轉換 API 回應為內部數據格式
+   */
+  private transformResponse(response: {
+    indexes?: Array<{
+      code: string;
+      aqi: number;
+      category: string;
+      dominantPollutant: string;
+    }>;
+    pollutants?: Array<{
+      code: string;
+      displayName: string;
+      fullName: string;
+      concentration: {
+        value: number;
+        units: string;
+      };
+      additionalInfo?: string;
+    }>;
+    dateTime: string;
+  }, lat: number, lng: number): AQIData {
+    const universalAQI = response.indexes?.find((idx) => idx.code === 'uaqi');
+
+    if (!universalAQI) {
+      throw new Error('API 回應中缺少 AQI 數據');
+    }
+
+    return {
+      aqi: universalAQI.aqi,
+      category: universalAQI.category,
+      dominantPollutant: universalAQI.dominantPollutant,
+      pollutants: response.pollutants?.map((p) => ({
+        code: p.code,
+        displayName: p.displayName,
+        fullName: p.fullName,
+        concentration: p.concentration,
+        additionalInfo: p.additionalInfo,
+      })),
+      timestamp: response.dateTime,
+      location: { lat, lng },
+      indexes: [
+        {
+          code: universalAQI.code,
+          aqi: universalAQI.aqi,
+          category: universalAQI.category,
+          dominantPollutant: universalAQI.dominantPollutant,
+        },
+      ],
+    };
   }
 
   /**
