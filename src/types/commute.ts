@@ -36,13 +36,20 @@ export interface CommuteRouteSummary {
 export interface CommuteRouteAqiStats {
   averageAqi: number;
   maxAqi: number;
+  peakAqi?: number;
   dominantPollutants: Array<{ code: string; count: number }>;
+  worstLocation?: {
+    address: string;
+    aqi: number;
+    coordinate: Coordinate;
+  };
 }
 
 export interface CommuteGuardianRoute {
   summary: CommuteRouteSummary;
   aqiStats?: CommuteRouteAqiStats;
   samples?: Array<Coordinate & { aqi?: number; dominantPollutant?: string }>;
+  onSelect?: () => void;
 }
 
 export interface CommuteGuardianResponse {
