@@ -1,4 +1,5 @@
 import { useCallback } from 'react';
+import { useTranslation } from '@/lib/i18n';
 
 export interface DiscussionSharePayload {
   cityName: string;
@@ -12,28 +13,28 @@ export interface DiscussionSharePayload {
 const TWITTER_BASE = 'https://twitter.com/intent/tweet';
 const FACEBOOK_BASE = 'https://www.facebook.com/sharer/sharer.php';
 
-function buildMessage({ cityName, mayorHandle, pollutant, peakWindow }: DiscussionSharePayload) {
+function buildMessage(t: (k: string, vars?: Record<string, unknown>) => string, { cityName, mayorHandle, pollutant, peakWindow }: DiscussionSharePayload) {
   const pollutantLabel = pollutant ? `${pollutant.toUpperCase()} ` : '';
-  const windowText = peakWindow ? `，預估高峰 ${peakWindow}` : '';
+  const windowText = peakWindow ? ` ${peakWindow}` : '';
   const mayorText = mayorHandle ? ` @${mayorHandle}` : '';
 
-  return `NASA EarthData 預測 ${cityName} ${pollutantLabel}PM2.5 將升高${windowText}！請檢視：` +
-    '${URL_PLACEHOLDER}' +
-    `${mayorText} #CleanSkyNow #SpaceApps`;
+  return t('share.message', { cityName, pollutantLabel, windowText, mayorText, url: '${URL_PLACEHOLDER}' });
 }
 
 export function useSocialShare() {
+  const { t } = useTranslation();
+
   return useCallback((payload: DiscussionSharePayload) => {
     const platform = payload.platform ?? 'twitter';
     const url = payload.appUrl || (typeof window !== 'undefined' ? window.location.href : 'https://skies.app');
 
-    const messageTemplate = buildMessage(payload);
+    const messageTemplate = buildMessage(t, payload);
     const message = messageTemplate.replace('${URL_PLACEHOLDER}', url);
 
     if (typeof navigator !== 'undefined' && navigator.share) {
       navigator
         .share({
-          title: 'Skies 行動建議',
+          title: t('share.title'),
           text: message,
           url,
         })
@@ -51,5 +52,5 @@ export function useSocialShare() {
     if (typeof window !== 'undefined') {
       window.open(shareUrl, '_blank', 'noopener,noreferrer,width=600,height=520');
     }
-  }, []);
+  }, [t]);
 }

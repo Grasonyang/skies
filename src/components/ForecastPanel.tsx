@@ -3,6 +3,7 @@
 import React from 'react';
 import { ForecastResponse } from '@/types/forecast';
 import { getAQILevel } from '@/lib/utils';
+import { useTranslation } from '@/lib/i18n';
 
 interface ForecastPanelProps {
   data: ForecastResponse | null;
@@ -25,12 +26,14 @@ const ForecastPanel: React.FC<ForecastPanelProps> = ({
   const mainContainerClasses = `bg-white/90 backdrop-blur-sm rounded-2xl shadow-2xl p-6 w-full max-w-2xl ${className ?? ''}`;
   const subtleContainerClasses = `bg-white/90 backdrop-blur-sm rounded-2xl shadow-2xl p-4 w-full ${className ?? ''}`;
 
+  const { t } = useTranslation();
+
   if (loading) {
     return (
       <div className={subtleContainerClasses}>
         <div className="flex items-center gap-3">
           <div className="animate-spin h-5 w-5 border-2 border-blue-500 border-t-transparent rounded-full"></div>
-          <h3 className="text-base font-bold text-gray-800">載入預測...</h3>
+          <h3 className="text-base font-bold text-gray-800">{t('forecast.loading')}</h3>
         </div>
       </div>
     );
@@ -42,7 +45,7 @@ const ForecastPanel: React.FC<ForecastPanelProps> = ({
         <div className="flex items-start gap-3">
           <span className="text-xl">⚠️</span>
           <div>
-            <h3 className="text-base font-bold text-red-600 mb-1">預測載入失敗</h3>
+            <h3 className="text-base font-bold text-red-600 mb-1">{t('forecast.errorTitle')}</h3>
             <p className="text-xs text-gray-600">{error}</p>
           </div>
         </div>
@@ -69,10 +72,11 @@ const ForecastPanel: React.FC<ForecastPanelProps> = ({
   const trend = secondHalfAvg > firstHalfAvg + 10 ? 'up' : 
                 secondHalfAvg < firstHalfAvg - 10 ? 'down' : 'stable';
 
+  // reuse t from above
   const trendText = {
-    up: '惡化',
-    down: '改善',
-    stable: '穩定',
+    up: t('forecast.trend.up'),
+    down: t('forecast.trend.down'),
+    stable: t('forecast.trend.stable'),
   }[trend];
 
   const trendIcon = {
@@ -98,7 +102,7 @@ const ForecastPanel: React.FC<ForecastPanelProps> = ({
       <div className="flex items-center justify-between mb-4">
         <h3 className="text-lg font-bold text-gray-800 flex items-center gap-2">
           <span>🔮</span>
-          <span>未來 24 小時預測</span>
+          <span>{t('forecast.title')}</span>
         </h3>
         <div className={`flex items-center gap-2 ${trendColor} font-semibold`}>
           <span>{trendIcon}</span>
@@ -112,7 +116,7 @@ const ForecastPanel: React.FC<ForecastPanelProps> = ({
           <div className="rounded-2xl bg-gradient-to-r from-blue-500/90 via-purple-500/90 to-blue-600/90 p-5 text-white shadow-lg">
             <div className="flex items-center justify-between">
               <div>
-                <p className="text-sm uppercase tracking-wide opacity-80">預測準確度</p>
+                <p className="text-sm uppercase tracking-wide opacity-80">{t('forecast.accuracyTitle')}</p>
                 <div className="flex items-end gap-2">
                   <span className="text-4xl font-black">
                     {confidence.confidenceScore}
@@ -130,8 +134,8 @@ const ForecastPanel: React.FC<ForecastPanelProps> = ({
                 />
               </div>
               <p className="mt-3 text-sm leading-relaxed opacity-90">
-                {confidence.confidenceDescription}
-              </p>
+                  {confidence.confidenceDescription}
+                </p>
             </div>
           </div>
           <div className="rounded-2xl border border-blue-100/70 bg-white/60 p-4 text-blue-900 shadow-inner">
@@ -152,25 +156,25 @@ const ForecastPanel: React.FC<ForecastPanelProps> = ({
       {/* 統計摘要 */}
       <div className="grid grid-cols-3 gap-4 mb-6">
         <div className="text-center">
-          <div className="text-sm text-gray-600 mb-1">平均</div>
+          <div className="text-sm text-gray-600 mb-1">{t('forecast.summary.average')}</div>
           <div className="text-2xl font-bold" style={{ color: getAQILevel(avgAQI).color }}>
             {avgAQI}
           </div>
-          <div className="text-xs text-gray-500 mt-1">{getAQILevel(avgAQI).label}</div>
+          <div className="text-xs text-gray-500 mt-1">{t(getAQILevel(avgAQI).labelKey ?? 'aqi.level.good')}</div>
         </div>
         <div className="text-center">
-          <div className="text-sm text-gray-600 mb-1">最低</div>
+          <div className="text-sm text-gray-600 mb-1">{t('forecast.summary.min')}</div>
           <div className="text-2xl font-bold" style={{ color: getAQILevel(minAQI).color }}>
             {minAQI}
           </div>
-          <div className="text-xs text-gray-500 mt-1">{getAQILevel(minAQI).label}</div>
+          <div className="text-xs text-gray-500 mt-1">{t(getAQILevel(minAQI).labelKey ?? 'aqi.level.good')}</div>
         </div>
         <div className="text-center">
-          <div className="text-sm text-gray-600 mb-1">最高</div>
+          <div className="text-sm text-gray-600 mb-1">{t('forecast.summary.max')}</div>
           <div className="text-2xl font-bold" style={{ color: getAQILevel(maxAQI).color }}>
             {maxAQI}
           </div>
-          <div className="text-xs text-gray-500 mt-1">{getAQILevel(maxAQI).label}</div>
+          <div className="text-xs text-gray-500 mt-1">{t(getAQILevel(maxAQI).labelKey ?? 'aqi.level.good')}</div>
         </div>
       </div>
 

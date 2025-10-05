@@ -1,6 +1,7 @@
-'use client';
+"use client";
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
+import { useTranslation } from '@/lib/i18n';
 import { Location, GeolocationState } from '@/types';
 import {
   DEFAULT_LOCATION,
@@ -15,12 +16,12 @@ import { getZoomFromAccuracy } from '@/lib/utils';
 async function getGPSLocation(): Promise<Location> {
   return new Promise((resolve, reject) => {
     if (!navigator.geolocation) {
-      reject(new Error('瀏覽器不支援定位功能'));
+      reject(new Error('geolocation.notSupported'));
       return;
     }
 
     const timeoutId = setTimeout(() => {
-      reject(new Error('GPS 定位超時'));
+      reject(new Error('geolocation.timeout'));
     }, GEOLOCATION_TIMEOUT);
 
     navigator.geolocation.getCurrentPosition(
@@ -35,16 +36,16 @@ async function getGPSLocation(): Promise<Location> {
       },
       (error) => {
         clearTimeout(timeoutId);
-        let errorMessage = 'GPS 定位失敗';
+        let errorMessage = 'geolocation.failed';
         switch (error.code) {
           case error.PERMISSION_DENIED:
-            errorMessage = '用戶拒絕了定位請求';
+            errorMessage = 'geolocation.permissionDenied';
             break;
           case error.POSITION_UNAVAILABLE:
-            errorMessage = '位置資訊不可用';
+            errorMessage = 'geolocation.positionUnavailable';
             break;
           case error.TIMEOUT:
-            errorMessage = 'GPS 定位超時';
+            errorMessage = 'geolocation.timeout';
             break;
         }
         reject(new Error(errorMessage));
@@ -68,13 +69,13 @@ async function getIPLocation(): Promise<Location> {
     });
 
     if (!response.ok) {
-      throw new Error('IP 定位 API 請求失敗');
+      throw new Error('geolocation.ipRequestFailed');
     }
 
     const data = await response.json();
 
     if (!data.latitude || !data.longitude) {
-      throw new Error('IP 定位數據無效');
+      throw new Error('geolocation.ipDataInvalid');
     }
 
     return {
@@ -85,7 +86,7 @@ async function getIPLocation(): Promise<Location> {
     };
   } catch (error) {
     throw new Error(
-      `IP 定位失敗: ${error instanceof Error ? error.message : '未知錯誤'}`
+      `geolocation.ipFailed: ${error instanceof Error ? error.message : 'unknown'}`
     );
   }
 }
@@ -134,6 +135,11 @@ async function getInitialLocation(): Promise<Location> {
  * 獲取位置資訊的 Hook
  */
 export function useGeolocation() {
+  const { t } = useTranslation();
+  const tRef = useRef(t);
+  // keep ref updated if t changes
+  tRef.current = t;
+  // Type hack: require used to avoid SSR issues; we'll call t below before setting error state
   const [state, setState] = useState<GeolocationState>({
     location: null,
     loading: true,
@@ -155,10 +161,13 @@ export function useGeolocation() {
       })
       .catch((error) => {
         if (isMounted) {
+          const raw = error instanceof Error ? error.message : '位置獲取失敗';
+          // if the error is a known translation key prefix, try to map
+          const translated = typeof raw === 'string' && raw.startsWith('geolocation') ? (tRef.current ? tRef.current(raw) : raw) : raw;
           setState({
             location: getDefaultLocation(),
             loading: false,
-            error: error instanceof Error ? error.message : '位置獲取失敗',
+            error: translated,
           });
         }
       });

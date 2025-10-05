@@ -4,6 +4,7 @@ import React from 'react';
 import { AQIData } from '@/types';
 import { ForecastResponse } from '@/types/forecast';
 import { useActionHUD } from '@/hooks/useActionHUD';
+import { useTranslation } from '@/lib/i18n';
 
 interface ActionHUDPanelProps {
   aqiData: AQIData | null;
@@ -12,54 +13,7 @@ interface ActionHUDPanelProps {
   onFeedback?: () => void;
   onStartDiscussion?: () => void;
   className?: string;
-  language?: 'zh' | 'en';
 }
-
-const riskCopy = {
-  zh: {
-    safe: '維持既有節奏',
-    caution: '留意身體反應',
-    unhealthy: '請優先室內替代方案',
-    dangerous: '立即停止暴露',
-  },
-  en: {
-    safe: 'Maintain current pace',
-    caution: 'Monitor body response',
-    unhealthy: 'Prioritize indoor alternatives',
-    dangerous: 'Stop exposure immediately',
-  },
-};
-
-const actionHudTexts = {
-  zh: {
-    title: '⚡ 行動風險 HUD',
-    description: 'Decision Engine L1 即時轉換為三個可操作建議，CTA 可直接加入提醒。',
-    healthPreference: '健康偏好：',
-    general: '通用',
-    healthToggle: 'HEALTH TOGGLE',
-    loading: '載入中...',
-    noData: '無法獲取行動建議，請稍後再試。',
-    feedback: '意見回饋',
-    share: '開始討論',
-    riskIndex: '風險指數',
-    recommendedTime: '建議時段',
-    bestTime: '最佳時段',
-  },
-  en: {
-    title: '⚡ Action Risk HUD',
-    description: 'Decision Engine L1 real-time conversion to three actionable recommendations, CTA can be directly added to reminders.',
-    healthPreference: 'Health Preference: ',
-    general: 'General',
-    healthToggle: 'HEALTH TOGGLE',
-    loading: 'Loading...',
-    noData: 'Unable to get action recommendations, please try again later.',
-    feedback: 'Feedback',
-    share: 'Start Discussion',
-    riskIndex: 'Risk Index',
-    recommendedTime: 'Recommended Time',
-    bestTime: 'Best Time',
-  },
-};
 
 const ActionHUDPanel: React.FC<ActionHUDPanelProps> = ({
   aqiData,
@@ -68,10 +22,30 @@ const ActionHUDPanel: React.FC<ActionHUDPanelProps> = ({
   onFeedback,
   onStartDiscussion,
   className,
-  language = 'zh',
 }) => {
-  const texts = actionHudTexts[language];
-  const riskTexts = riskCopy[language];
+  const { t, locale } = useTranslation();
+  const texts = {
+    title: t('actionHud.title'),
+    description: t('actionHud.description'),
+    healthPreference: t('actionHud.healthPreference'),
+    general: t('actionHud.general'),
+    healthToggle: t('actionHud.healthToggle'),
+    loading: t('actionHud.loading'),
+    noData: t('actionHud.noData'),
+    feedback: t('actionHud.feedback'),
+    share: t('actionHud.share'),
+    riskIndex: t('actionHud.riskIndex'),
+    recommendedTime: t('actionHud.recommendedTime'),
+    bestTime: t('actionHud.bestTime'),
+    highestRiskActivity: t('actionHud.highestRiskActivity'),
+    missingData: t('actionHud.missingData'),
+  };
+  const riskTexts = {
+    safe: t('risk.safe'),
+    caution: t('risk.caution'),
+    unhealthy: t('risk.unhealthy'),
+    dangerous: t('risk.dangerous'),
+  };
   const { suggestions, dominantRisk } = useActionHUD({ aqiData, forecastData });
 
   const baseClass = 'bg-white/95 backdrop-blur-md rounded-3xl shadow-xl p-6 w-full max-w-3xl';
@@ -93,10 +67,12 @@ const ActionHUDPanel: React.FC<ActionHUDPanelProps> = ({
   if (!aqiData) {
     return (
       <div className={`${combinedClass} text-gray-500`}>
-        尚未取得空氣品質資料。
+        {texts.missingData}
       </div>
     );
   }
+
+  const dateLocale = locale === 'en' ? 'en-US' : locale ?? 'zh-TW';
 
   return (
     <div className={combinedClass}>
@@ -123,7 +99,7 @@ const ActionHUDPanel: React.FC<ActionHUDPanelProps> = ({
                 onClick={onFeedback}
                 className="px-3 py-1 rounded-full bg-emerald-50 text-emerald-600 border border-emerald-200"
               >
-                給我建議
+                {texts.feedback}
               </button>
             )}
             {onStartDiscussion && (
@@ -131,7 +107,7 @@ const ActionHUDPanel: React.FC<ActionHUDPanelProps> = ({
                 onClick={onStartDiscussion}
                 className="px-3 py-1 rounded-full bg-indigo-50 text-indigo-600 border border-indigo-200"
               >
-                發起討論
+                {texts.share}
               </button>
             )}
           </div>
@@ -147,7 +123,7 @@ const ActionHUDPanel: React.FC<ActionHUDPanelProps> = ({
           >
             <div className="flex flex-wrap items-center justify-between gap-3">
               <div>
-                <p className="text-sm text-slate-500">最高風險活動</p>
+                <p className="text-sm text-slate-500">{texts.highestRiskActivity}</p>
                 <h4 className="text-lg font-semibold text-slate-800">
                   {dominantRisk.activity.icon} {dominantRisk.activity.name}
                 </h4>
@@ -171,12 +147,12 @@ const ActionHUDPanel: React.FC<ActionHUDPanelProps> = ({
               <div className="flex flex-wrap items-center gap-2 text-xs text-indigo-600">
                 <span className="font-semibold">{texts.recommendedTime}</span>
                 <span>
-                  {new Date(dominantRisk.bestTimeWindow.start).toLocaleTimeString('zh-TW', {
+                  {new Date(dominantRisk.bestTimeWindow.start).toLocaleTimeString(dateLocale, {
                     hour: '2-digit',
                     minute: '2-digit',
                   })}{' '}
                   →{' '}
-                  {new Date(dominantRisk.bestTimeWindow.end).toLocaleTimeString('zh-TW', {
+                  {new Date(dominantRisk.bestTimeWindow.end).toLocaleTimeString(dateLocale, {
                     hour: '2-digit',
                     minute: '2-digit',
                   })}

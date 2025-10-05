@@ -3,6 +3,7 @@
 import React from 'react';
 import { AQIData } from '@/types';
 import { getAQILevel } from '@/lib/utils';
+import { useTranslation } from '@/lib/i18n';
 
 interface AirQualityPanelProps {
   data: AQIData | null;
@@ -17,15 +18,6 @@ const pollutantNames: Record<string, string> = {
   no2: 'NO₂',
   so2: 'SO₂',
   co: 'CO',
-};
-
-const pollutantFullNames: Record<string, string> = {
-  pm25: '細懸浮微粒',
-  pm10: '懸浮微粒',
-  o3: '臭氧',
-  no2: '二氧化氮',
-  so2: '二氧化硫',
-  co: '一氧化碳',
 };
 
 // 簡化單位顯示
@@ -43,6 +35,7 @@ export default function AirQualityPanel({
   loading,
   error,
 }: AirQualityPanelProps) {
+  const { t, locale } = useTranslation();
   if (loading) {
     return (
       <div className="bg-white/95 backdrop-blur-md rounded-xl shadow-xl p-6 w-80 border border-gray-200">
@@ -61,7 +54,7 @@ export default function AirQualityPanel({
         <div className="p-6">
           <div className="text-center mb-4">
             <div className="text-4xl mb-2">⚠️</div>
-            <h3 className="font-bold text-lg text-red-600 mb-2">無法載入數據</h3>
+            <h3 className="font-bold text-lg text-red-600 mb-2">{t('airQuality.errorTitle')}</h3>
           </div>
           <div className="bg-red-50 rounded-lg p-4 border border-red-100">
             <p className="text-sm text-red-800 text-center leading-relaxed">
@@ -69,9 +62,9 @@ export default function AirQualityPanel({
             </p>
           </div>
           <div className="mt-4 text-xs text-gray-600 text-center">
-            💡 提示：該地區可能暫無監測站
+            💡 {t('airQuality.hint.noStations')}
             <br />
-            請嘗試選擇其他地點
+            {t('airQuality.hint.tryOtherLocation')}
           </div>
         </div>
       </div>
@@ -83,13 +76,22 @@ export default function AirQualityPanel({
   }
 
   const aqiLevel = getAQILevel(data.aqi);
+  const dominantCode = (data.dominantPollutant ?? '').toLowerCase();
+  const dateLocale = locale === 'en' ? 'en-US' : locale ?? 'zh-TW';
+
+  const resolveLongName = (code: string, fallback?: string) => {
+    const normalized = code.toLowerCase();
+    const key = `pollutants.long.${normalized}`;
+    const translated = t(key);
+    return translated !== key ? translated : fallback ?? code.toUpperCase();
+  };
 
   return (
     <div className="bg-white/95 backdrop-blur-md rounded-2xl shadow-2xl w-80 border border-gray-200 overflow-hidden">
       {/* AQI 區塊 */}
       <div className="text-center px-6 pt-6 pb-4 bg-gradient-to-b from-gray-50 to-white">
         <div className="text-xs font-semibold text-gray-500 uppercase tracking-wide mb-3">
-          空氣品質指數
+          {t('airQuality.title')}
         </div>
         <div
           className="text-7xl font-bold mb-3 leading-none"
@@ -101,20 +103,20 @@ export default function AirQualityPanel({
           className="inline-block px-5 py-2 rounded-full text-white font-bold text-sm shadow-lg"
           style={{ backgroundColor: aqiLevel.color }}
         >
-          {aqiLevel.label}
+          {t(aqiLevel.labelKey ?? 'aqi.level.good')}
         </div>
       </div>
 
       {/* 主要污染物 Tag */}
       <div className="px-6 py-3 bg-amber-50 border-y border-amber-100">
         <div className="flex items-center justify-between">
-          <span className="text-xs font-medium text-amber-800">主要污染物</span>
+          <span className="text-xs font-medium text-amber-800">{t('pollutants.dominantLabel')}</span>
           <div className="flex items-center gap-2">
             <span className="inline-flex items-center px-3 py-1 rounded-full text-sm font-bold bg-amber-200 text-amber-900">
-              {pollutantNames[data.dominantPollutant] || data.dominantPollutant}
+              {pollutantNames[dominantCode] || pollutantNames[data.dominantPollutant] || data.dominantPollutant}
             </span>
             <span className="text-xs text-amber-700">
-              {pollutantFullNames[data.dominantPollutant]}
+              {resolveLongName(dominantCode || data.dominantPollutant, data.dominantPollutant)}
             </span>
           </div>
         </div>
@@ -124,13 +126,14 @@ export default function AirQualityPanel({
       {data.pollutants && data.pollutants.length > 0 && (
         <div className="px-6 py-4">
           <h3 className="text-xs font-semibold text-gray-500 uppercase tracking-wide mb-3">
-            污染物濃度
+            {t('pollutants.concentrationTitle')}
           </h3>
           <div className="grid grid-cols-2 gap-2">
             {data.pollutants.slice(0, 4).map((pollutant) => {
               const value = pollutant.concentration.value;
               const unit = simplifyUnit(pollutant.concentration.units);
-              
+              const normalizedCode = pollutant.code.toLowerCase();
+
               return (
                 <div
                   key={pollutant.code}
@@ -138,7 +141,7 @@ export default function AirQualityPanel({
                 >
                   <div className="flex items-baseline justify-between mb-1">
                     <span className="text-xs font-bold text-gray-700">
-                      {pollutantNames[pollutant.code] || pollutant.displayName}
+                      {pollutantNames[normalizedCode] || pollutantNames[pollutant.code] || pollutant.displayName}
                     </span>
                   </div>
                   <div className="flex items-baseline gap-1">
@@ -161,7 +164,7 @@ export default function AirQualityPanel({
         <div className="flex items-center justify-center gap-2 text-xs text-gray-600">
           <span className="text-gray-400">🕒</span>
           <span className="font-medium">
-            {new Date(data.timestamp).toLocaleDateString('zh-TW', {
+            {new Date(data.timestamp).toLocaleDateString(dateLocale, {
               month: '2-digit',
               day: '2-digit',
               hour: '2-digit',

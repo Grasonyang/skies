@@ -1,0 +1,282 @@
+{
+  "missionControl": {
+    "title": "Mission Control",
+    "loading": "資料載入中",
+    "description": "將三個重點場景的即時空氣品質、污染指標與行動建議整合成單一儀表板。",
+    "sceneLoading": "⏳ 場景載入中",
+    "dominantPollutantLabel": "優勢污染：",
+    "toggleButton_current": "目前顯示中",
+    "toggleButton_switch": "點擊切換",
+    "forecastSummaryTitle": "預測摘要",
+    "averageAqi": "平均 AQI：",
+    "confidenceScore": "信心度：",
+    "coordinates": "座標",
+    "updatedAt": "更新時間",
+    "volatilityLabel": "波動度：{pct}%",
+    "selectedScenarioLabel": "選定場景",
+    "scenarios": {
+      "commute": {
+        "name": "上班族 · 即時通勤",
+        "description": {
+          "current": "根據目前定位估算通勤風險",
+          "fallback": "台中市政府商圈（預設地標）"
+        }
+      },
+      "family": {
+        "name": "親子 · 公園午後",
+        "description": "台中都會公園親子草坪"
+      },
+      "runner": {
+        "name": "運動 · 夜跑河濱",
+        "description": "草悟道夜間慢跑路線"
+      }
+    }
+  },
+  "fingerprint": {
+    "errorLoad": "⚠️ 無法載入污染指標：{error}",
+    "noPollutantData": "暫無污染粒子，將在資料更新後顯示雷達圖。",
+    "title": "污染類型指標",
+    "tab": {
+      "now": "現在",
+      "forecast": "預測"
+    },
+    "comparePeriod": "對比時段",
+    "timeSliderHint": "拖拽時間軸，查看不同時段的污染指標。預留 TEMPO 高解分析資料介面。",
+    "description": "將目前污染輪廓與未來時段比較，辨識最具威脅的污染物。",
+    "peakLabel": "峰值上限 {max} {units}",
+    "nowLabel": "現在",
+    "forecastLabel": "預測",
+    "noForecastData": "暫無預測資料"
+  },
+  "geolocation": {
+    "notSupported": "瀏覽器不支援定位功能",
+    "timeout": "GPS 定位超時",
+    "failed": "GPS 定位失敗",
+    "permissionDenied": "用戶拒絕了定位請求",
+    "positionUnavailable": "位置資訊不可用",
+    "ipRequestFailed": "IP 定位 API 請求失敗",
+    "ipDataInvalid": "IP 定位數據無效",
+    "ipFailed": "IP 定位失敗: {error}"
+  },
+  "defaults": {
+    "city": {
+      "taichung": "台中市"
+    }
+  },
+  "share": {
+    "title": "Skies 行動建議",
+    "message": "NASA EarthData 預測 {cityName} {pollutantLabel}PM2.5 將升高{windowText}！請檢視：{url}{mayorText} #CleanSkyNow #SpaceApps"
+  },
+  "location": {
+    "gps": "GPS 定位",
+    "ip": "IP 定位",
+    "default": "預設位置",
+    "unknown": "未知",
+    "accuracy": "精度"
+  },
+  "actionHud": {
+    "title": "⚡ 行動風險 HUD",
+    "description": "Decision Engine L1 即時轉換為三個可操作建議，CTA 可直接加入提醒。",
+    "healthPreference": "健康偏好：",
+    "general": "通用",
+    "healthToggle": "HEALTH TOGGLE",
+    "loading": "載入中...",
+    "noData": "無法獲取行動建議，請稍後再試。",
+    "feedback": "意見回饋",
+    "share": "開始討論",
+    "riskIndex": "風險指數",
+    "recommendedTime": "建議時段",
+    "bestTime": "最佳時段",
+    "highestRiskActivity": "最高風險活動",
+    "missingData": "尚未取得空氣品質資料。"
+  },
+  "pollutants": {
+    "dominantLabel": "主要污染物",
+    "concentrationTitle": "污染物濃度",
+    "long": {
+      "pm25": "細懸浮微粒",
+      "pm10": "懸浮微粒",
+      "o3": "臭氧",
+      "no2": "二氧化氮",
+      "so2": "二氧化硫",
+      "co": "一氧化碳"
+    }
+  },
+  "risk": {
+    "safe": "維持既有節奏",
+    "caution": "留意身體反應",
+    "unhealthy": "請優先室內替代方案",
+    "dangerous": "立即停止暴露"
+  },
+  "aqi": {
+    "level": {
+      "good": "良好",
+      "moderate": "普通",
+      "unhealthy_sensitive": "對敏感族群不健康",
+      "unhealthy": "不健康",
+      "very_unhealthy": "非常不健康",
+      "hazardous": "危險"
+    }
+  },
+  "map": {
+    "loading": "正在獲取您的位置...",
+    "apiKeyError": "⚠️ 配置錯誤",
+    "apiKeyErrorMessage": "Google Maps API key 未設定。請在環境變數中設定",
+    "or": "或",
+    "mapsApiLoaded": "🗺️ Maps API 已載入",
+    "missionCenterTitle": "空氣任務中心",
+    "countdown": {
+      "sharePrompt": "分享行動建議，讓更多人參與。",
+      "withWindow": "目標：在 {time} 前讓更多人看到行動建議。"
+    },
+    "selection": {
+      "origin": "點擊地圖選擇起點位置。",
+      "destination": "再點一次地圖選擇目的地，可拖曳調整。",
+      "confirm": "調整完畢後按下「產生路線」完成。"
+    },
+    "commute": {
+      "customOrigin": "自訂起點",
+      "currentLocation": "目前位置",
+      "defaultLabel": "預設台中市",
+      "unknownDestination": "---"
+    },
+    "commuteZone": {
+      "title": "通勤圈層級",
+      "description": "以目前定位為中心的 3 個圈層，越靠近內圈代表風險越高，顏色對應安全等級。",
+      "footer": "每 10 分鐘更新，採樣目前站點推估並預留 TEMPO 快取。"
+    },
+    "zone": {
+      "safe": "安全",
+      "caution": "警示",
+      "danger": "危險"
+    },
+    "defaultScenarios": {
+      "office": { "label": "上班族 · 七期 → 市政", "description": "七期重劃區到台中市政府" },
+      "parent": { "label": "親子 · 北屯 → 美術館", "description": "北屯兒童公園到國立臺灣美術館" },
+      "runner": { "label": "夜跑 · 西屯 → 秋紅谷", "description": "秋紅谷生態公園環狀步道" }
+    }
+,
+    "scenario": {
+      "title": "Scenario Studio",
+      "description": "生成 24 小時活動劇本，結合場域與 AQI 預測，搭配 AI 智能建議"
+    },
+    "pickLocation": {
+      "title": "選擇情境位置",
+      "step": "步驟 1/1",
+      "hint": "在地圖上點擊要生成劇本的地點，可多次重新選擇。"
+    },
+    "customCommute": {
+      "title": "自訂通勤路線",
+      "step1": "步驟 1/3",
+      "step2": "步驟 2/3",
+      "step3": "步驟 3/3",
+      "origin": "起點",
+      "destination": "目的地",
+      "unset": "未設定",
+      "reset": "重置",
+      "cancel": "取消",
+      "confirm": "產生路線"
+    }
+  },
+  "commuteGuardian": {
+    "title": "🚇 通勤守護",
+    "description": "比較兩條通勤路線的距離、時間與空氣品質風險，提供即時行動建議。",
+    "refresh": "🔄 重新評估",
+    "origin": "出發：",
+    "destination": "目的：",
+    "selectingRoute": "選擇路線中…",
+    "customRoute": "自訂路線",
+    "primaryRoute": "優先路線",
+    "alternativeRoute": "備用路線",
+    "trafficEstimate": "含交通估計：",
+    "primaryPollutant": "主污染物",
+    "worstSample": "最差採樣點",
+    "pollutantFrequency": "主要污染物次序：",
+    "noData": "無資料",
+    "noRouteData": "目前尚未取得路線資料，請稍後再試或重新整理。",
+    "reselectOrigin": "重新選擇出發位置",
+    "reselectDestination": "重新選擇目的地",
+    "averageAqi": "平均 {average}",
+    "peakAqi": "峰值 {peak}",
+    "cta": {
+      "safe": "立即出發",
+      "caution": "戴口罩再出發",
+      "danger": "延後 30 分鐘"
+    }
+  },
+  "scenarioStudio": {
+    "quick": {
+      "title": "快速情境生成",
+      "clear": "清除所有情境",
+      "hint": "請在地圖上點擊位置後再使用快速生成。"
+    },
+    "form": {
+      "customTitle": "自訂情境",
+      "customSubtitle": "選擇地圖上的位置與活動類型，生成專屬劇本。",
+      "activityLabel": "活動名稱",
+      "templateLabel": "活動場域",
+      "selectedCoordinate": "選擇的座標",
+      "defaultActivity": "自訂活動",
+      "locationPlaceholder": "請在地圖上點擊位置",
+      "recenter": "重新定位",
+      "pickOnMap": "在地圖上選擇",
+      "pickInProgress": "前往地圖中…",
+      "generateButton": "生成自訂情境"
+    },
+    "templates": {
+      "run": "戶外跑步",
+      "family": "親子公園",
+      "indoor": "室內健身",
+      "custom": "客製探索"
+    },
+    "timeline": {
+      "heading": "{activity} - 情境分析",
+      "locationPrefix": "📍",
+      "close": "關閉",
+      "averageAqi": "平均 AQI",
+      "bestSlot": "最佳時段",
+      "worstSlot": "最差時段",
+      "trendTitle": "24 小時空氣品質趨勢",
+      "aiTitle": "AI 智能建議",
+      "loading": "分析中...",
+      "noRecommendation": "暫無建議",
+      "disclaimer": {
+        "line1": "此分析基於 Google 空氣品質預測與 Decision Engine L1 決策邏輯。",
+        "line2": "請以即時監測為準，並依個人健康狀況調整活動計畫。"
+      },
+      "tooltip": {
+        "aqi": "AQI",
+        "dominant": "主污染物"
+      }
+    },
+    "loadingState": "生成情境中...",
+    "emptyState": "選擇一個活動類型開始生成情境分析"
+  },
+  "countdown": {
+    "title": "⏳ 行動倒數計時",
+    "description": "分享行動建議，讓更多人參與。",
+    "goal": "目標 {count}",
+    "achieved": "已動員 {count}",
+    "expired": "行動期已結束",
+    "remaining": "剩餘時間",
+    "untilPeak": "距離預測高峰尚餘",
+    "callToAction": {
+      "active": "加速分享，擴大觸達！",
+      "expired": "即刻行動，持續關注！"
+    },
+    "share": "發起討論"
+  },
+  "forecast": {
+    "loading": "載入預測...",
+    "errorTitle": "預測載入失敗",
+    "trend": { "up": "惡化", "down": "改善", "stable": "穩定" },
+    "title": "未來 24 小時預測",
+    "accuracyTitle": "預測準確度",
+    "summary": { "average": "平均", "min": "最低", "max": "最高" }
+  },
+  "airQuality": {
+    "errorTitle": "無法載入數據",
+    "hint": { "noStations": "提示：該地區可能暫無監測站", "tryOtherLocation": "請嘗試選擇其他地點" },
+    "title": "空氣品質指數"
+  }
+}

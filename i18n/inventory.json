@@ -1,0 +1,178 @@
+[
+  {
+    "file": "src/components/MissionControlPanel.tsx",
+    "line": 33,
+    "original": "資料載入中",
+    "key": "missionControl.loading",
+    "priority": "P0",
+    "notes": "loading placeholder shown when data is null"
+  },
+  {
+    "file": "src/components/MissionControlPanel.tsx",
+    "line": 120,
+    "original": "將三個重點場景的即時空氣品質、污染指標與行動建議整合成單一儀表板。",
+    "key": "missionControl.description",
+    "priority": "P0",
+    "notes": "long description text in panel intro"
+  },
+  {
+    "file": "src/components/MissionControlPanel.tsx",
+    "line": 126,
+    "original": "⏳ 場景載入中",
+    "key": "missionControl.sceneLoading",
+    "priority": "P0",
+    "notes": "UI status with emoji"
+  },
+  {
+    "file": "src/components/MissionControlPanel.tsx",
+    "line": 193,
+    "original": "優勢污染：",
+    "key": "missionControl.dominantPollutantLabel",
+    "priority": "P0",
+    "notes": "label before pollutant name"
+  },
+  {
+    "file": "src/components/MissionControlPanel.tsx",
+    "line": 200,
+    "original": "{isSelected ? '目前顯示中' : '點擊切換'}",
+    "key": "missionControl.toggleButton",
+    "priority": "P0",
+    "notes": "two-state button text; keep as single key with condition handled in code or two keys"
+  },
+  {
+    "file": "src/components/MissionControlPanel.tsx",
+    "line": 240,
+    "original": "預測摘要",
+    "key": "missionControl.forecastSummaryTitle",
+    "priority": "P0",
+    "notes": "section title"
+  },
+  {
+    "file": "src/components/MissionControlPanel.tsx",
+    "line": 242,
+    "original": "平均 AQI：",
+    "key": "missionControl.averageAqi",
+    "priority": "P0",
+    "notes": "label followed by value"
+  },
+  {
+    "file": "src/components/MissionControlPanel.tsx",
+    "line": 244,
+    "original": "信心度：",
+    "key": "missionControl.confidenceScore",
+    "priority": "P0",
+    "notes": "label for confidence score"
+  },
+  {
+    "file": "src/components/PollutantFingerprintPanel.tsx",
+    "line": 184,
+    "original": "⚠️ 無法載入污染指標：{error}",
+    "key": "fingerprint.errorLoad",
+    "priority": "P0",
+    "notes": "error message with interpolation"
+  },
+  {
+    "file": "src/components/PollutantFingerprintPanel.tsx",
+    "line": 192,
+    "original": "暫無污染粒子，將在資料更新後顯示雷達圖。",
+    "key": "fingerprint.noPollutantData",
+    "priority": "P0",
+    "notes": "empty state explanation"
+  },
+  {
+    "file": "src/components/PollutantFingerprintPanel.tsx",
+    "line": 201,
+    "original": "污染類型指標",
+    "key": "fingerprint.title",
+    "priority": "P0",
+    "notes": "panel title"
+  },
+  {
+    "file": "src/components/PollutantFingerprintPanel.tsx",
+    "line": 209,
+    "original": "現在",
+    "key": "fingerprint.tab.now",
+    "priority": "P0",
+    "notes": "tab label"
+  },
+  {
+    "file": "src/components/PollutantFingerprintPanel.tsx",
+    "line": 213,
+    "original": "預測",
+    "key": "fingerprint.tab.forecast",
+    "priority": "P0",
+    "notes": "tab label"
+  },
+  {
+    "file": "src/components/PollutantFingerprintPanel.tsx",
+    "line": 275,
+    "original": "對比時段",
+    "key": "fingerprint.comparePeriod",
+    "priority": "P1",
+    "notes": "UI label for comparison period"
+  },
+  {
+    "file": "src/components/PollutantFingerprintPanel.tsx",
+    "line": 294,
+    "original": "拖拽時間軸，查看不同時段的污染指標。預留 TEMPO 高解分析資料介面。",
+    "key": "fingerprint.timeSliderHint",
+    "priority": "P1",
+    "notes": "helper text below slider"
+  },
+  {
+    "file": "src/hooks/useGeolocation.ts",
+    "line": 18,
+    "original": "瀏覽器不支援定位功能",
+    "key": "geolocation.notSupported",
+    "priority": "P0",
+    "notes": "error thrown when geolocation missing"
+  },
+  {
+    "file": "src/hooks/useGeolocation.ts",
+    "line": 23,
+    "original": "GPS 定位超時",
+    "key": "geolocation.timeout",
+    "priority": "P0",
+    "notes": "timeout error message"
+  },
+  {
+    "file": "src/lib/constants.ts",
+    "line": 5,
+    "original": "台中市",
+    "key": "defaults.city.taichung",
+    "priority": "P1",
+    "notes": "default city name used in UI; may be kept as data but include for translation"
+  },
+  {
+    "file": "src/lib/constants.ts",
+    "line": 32,
+    "original": "良好",
+    "key": "aqi.level.good",
+    "priority": "P0",
+    "notes": "AQI label"
+  },
+  {
+    "file": "src/lib/constants.ts",
+    "line": 33,
+    "original": "普通",
+    "key": "aqi.level.moderate",
+    "priority": "P0",
+    "notes": "AQI label"
+  },
+  {
+    "file": "src/lib/constants.ts",
+    "line": 34,
+    "original": "對敏感族群不健康",
+    "key": "aqi.level.unhealthy_sensitive",
+    "priority": "P0",
+    "notes": "AQI label"
+  },
+  {
+    "file": "src/types/index.ts",
+    "line": 1,
+    "original": "位置相關類型",
+    "key": "types.comment.location",
+    "priority": "P2",
+    "notes": "code comment (optional to translate)"
+  }
+]

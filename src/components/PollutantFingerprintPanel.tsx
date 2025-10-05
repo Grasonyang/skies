@@ -1,6 +1,7 @@
 'use client';
 
 import React, { useEffect, useMemo, useState } from 'react';
+import { useTranslation } from '@/lib/i18n';
 import { AQIData } from '@/types';
 import { ForecastResponse } from '@/types/forecast';
 
@@ -50,6 +51,7 @@ const PollutantFingerprintPanel: React.FC<PollutantFingerprintPanelProps> = ({
   error,
   className,
 }) => {
+  const { t } = useTranslation();
   const [selectedIndex, setSelectedIndex] = useState(3);
 
   const sliderMax = useMemo(
@@ -181,7 +183,7 @@ const PollutantFingerprintPanel: React.FC<PollutantFingerprintPanelProps> = ({
   if (error) {
     return (
       <div className={`bg-white rounded-3xl shadow-xl p-6 text-red-500 ${className ?? ''}`}>
-        ⚠️ 無法載入污染指紋：{error}
+        ⚠️ {t('fingerprint.errorLoad', { error })}
       </div>
     );
   }
@@ -189,7 +191,7 @@ const PollutantFingerprintPanel: React.FC<PollutantFingerprintPanelProps> = ({
   if (!mergedCodes.length) {
     return (
       <div className={`bg-white rounded-3xl shadow-xl p-6 text-gray-500 ${className ?? ''}`}>
-        暫無污染物細節，將在資料更新後顯示雷達圖。
+        {t('fingerprint.noPollutantData')}
       </div>
     );
   }
@@ -198,19 +200,19 @@ const PollutantFingerprintPanel: React.FC<PollutantFingerprintPanelProps> = ({
     <div className={`bg-white/95 backdrop-blur-md rounded-3xl shadow-2xl p-6 w-full max-w-5xl ${className ?? ''}`}>
       <div className="flex flex-col md:flex-row md:items-start md:justify-between gap-4 mb-6">
         <div>
-          <h3 className="text-2xl font-bold text-gray-800">🧬 污染類型指紋</h3>
+          <h3 className="text-2xl font-bold text-gray-800">🧬 {t('fingerprint.title')}</h3>
           <p className="text-sm text-gray-500">
-            將目前污染輪廓與未來時段比較，辨識最具威脅的污染物。
+            {t('fingerprint.description')}
           </p>
         </div>
         <div className="flex flex-wrap items-center gap-2 text-sm">
-          <span className="inline-flex items-center gap-1">
+            <span className="inline-flex items-center gap-1">
             <span className="w-3 h-3 rounded-full bg-emerald-500/60" />
-            現在
+            {t('fingerprint.tab.now')}
           </span>
-          <span className="inline-flex items-center gap-1">
+            <span className="inline-flex items-center gap-1">
             <span className="w-3 h-3 rounded-full bg-indigo-500/60" />
-            預測
+            {t('fingerprint.tab.forecast')}
           </span>
         </div>
       </div>
@@ -271,8 +273,8 @@ const PollutantFingerprintPanel: React.FC<PollutantFingerprintPanelProps> = ({
 
         <div className="space-y-6">
           <div className="bg-slate-50 border border-slate-100 rounded-2xl p-4">
-            <div className="flex flex-wrap items-center justify-between gap-2 text-sm text-slate-600 mb-2">
-              <span>對比時段</span>
+              <div className="flex flex-wrap items-center justify-between gap-2 text-sm text-slate-600 mb-2">
+              <span>{t('fingerprint.comparePeriod')}</span>
               <span className="rounded-full bg-white px-2 py-0.5 text-xs font-semibold text-indigo-600">
                 {selectedForecast?.dateTime
                   ? new Date(selectedForecast.dateTime).toLocaleString('zh-TW', {
@@ -291,7 +293,7 @@ const PollutantFingerprintPanel: React.FC<PollutantFingerprintPanelProps> = ({
               className="w-full accent-indigo-500"
             />
             <p className="text-xs text-slate-500 mt-2">
-              拖曳時間軸，查看不同時段的污染指紋。預留 TEMPO 高解析度資料介面。
+              {t('fingerprint.timeSliderHint')}
             </p>
           </div>
 
@@ -317,17 +319,17 @@ const PollutantFingerprintPanel: React.FC<PollutantFingerprintPanelProps> = ({
                   <div className="flex items-center justify-between mb-2">
                     <div>
                       <p className="text-sm font-semibold text-slate-700">{config?.label}</p>
-                      <p className="text-xs text-slate-500">峰值上限 {config?.max} {config?.units}</p>
+                      <p className="text-xs text-slate-500">{t('fingerprint.peakLabel', { max: config?.max, units: config?.units })}</p>
                     </div>
                     <div className="text-right text-xs text-slate-500">
                       <p>
-                        現在：
+                        {t('fingerprint.nowLabel')}：
                         <span className="font-semibold text-slate-700">
                           {currentValue?.toFixed(1) ?? '--'}
                         </span>
                       </p>
                       <p>
-                        預測：
+                        {t('fingerprint.forecastLabel')}：
                         <span className="font-semibold text-indigo-600">
                           {forecastValue?.toFixed(1) ?? '--'}
                         </span>
@@ -335,7 +337,7 @@ const PollutantFingerprintPanel: React.FC<PollutantFingerprintPanelProps> = ({
                     </div>
                   </div>
 
-                  <Sparkline data={series} color={config?.color ?? '#0ea5e9'} />
+                  <Sparkline data={series} color={config?.color ?? '#0ea5e9'} t={t} />
                 </div>
               );
             })}
@@ -349,9 +351,10 @@ const PollutantFingerprintPanel: React.FC<PollutantFingerprintPanelProps> = ({
 const Sparkline: React.FC<{
   data: Array<{ time: Date; value: number }>;
   color: string;
-}> = ({ data, color }) => {
+  t: (k: string, vars?: Record<string, unknown>) => string;
+}> = ({ data, color, t }) => {
   if (!data.length) {
-    return <div className="h-20 flex items-center justify-center text-xs text-slate-400">暫無預測資料</div>;
+    return <div className="h-20 flex items-center justify-center text-xs text-slate-400">{t('fingerprint.noForecastData')}</div>;
   }
 
   const width = 220;

@@ -33,6 +33,7 @@ import ActionCountdownPanel from '@/components/ActionCountdownPanel';
 import { useSocialShare } from '@/hooks/useSocialShare';
 import BriefingPanel from '@/components/BriefingPanel';
 import { calculateDistance } from '@/lib/utils';
+import { useTranslation } from '@/lib/i18n';
 
 const ZONE_ORDER: Record<'dangerous' | 'caution' | 'safe', number> = {
   dangerous: 0,
@@ -52,26 +53,7 @@ type FeatureAction =
   | 'healthRecommendation'
   | 'mediaBriefing';
 
-const LANGUAGE_TEXTS = {
-  zh: {
-    loading: '正在獲取您的位置...',
-    apiKeyError: '⚠️ 配置錯誤',
-    apiKeyErrorMessage: 'Google Maps API key 未設定。請在環境變數中設定',
-    or: '或',
-    mapsApiLoaded: '🗺️ Maps API 已載入',
-    missionCenterTitle: '空氣任務中心',
-    airQualityMissionSuite: 'Air Quality Mission Suite'
-  },
-  en: {
-    loading: 'Getting your location...',
-    apiKeyError: '⚠️ Configuration Error',
-    apiKeyErrorMessage: 'Google Maps API key is not configured. Please set it in environment variables',
-    or: 'or',
-    mapsApiLoaded: '🗺️ Maps API loaded',
-    missionCenterTitle: 'Air Mission Center',
-    airQualityMissionSuite: 'Air Quality Mission Suite'
-  }
-};
+
 
 interface FeatureConfig {
   id: string;
@@ -81,6 +63,8 @@ interface FeatureConfig {
   focusRing: string;
   labels: Record<FeatureLanguage, string>;
   descriptions: Record<FeatureLanguage, string>;
+  labelKey?: string;
+  descriptionKey?: string;
   requiresAqi?: boolean;
 }
 
@@ -105,9 +89,11 @@ const FEATURE_CONFIGS: FeatureConfig[] = [
       en: 'Mission Control',
     },
     descriptions: {
-      zh: '開啟 Mission Control 主控台',
-      en: 'Open the Mission Control dashboard',
+      zh: '開啟任務主控台以檢視與管理事件',
+      en: 'Open mission control to view and manage events',
     },
+    labelKey: 'map.features.missionControl.label',
+    descriptionKey: 'map.features.missionControl.description',
   },
   {
     id: 'commute-guardian',
@@ -120,9 +106,11 @@ const FEATURE_CONFIGS: FeatureConfig[] = [
       en: 'Commute Guardian',
     },
     descriptions: {
-      zh: '查看通勤風險建議',
-      en: 'View commute risk guidance',
+      zh: '檢視通勤路線與風險評估',
+      en: 'View commute routes and risk assessments',
     },
+    labelKey: 'map.features.commuteGuardian.label',
+    descriptionKey: 'map.features.commuteGuardian.description',
   },
   {
     id: 'scenario-studio',
@@ -135,9 +123,11 @@ const FEATURE_CONFIGS: FeatureConfig[] = [
       en: 'Scenario Studio',
     },
     descriptions: {
-      zh: '生成 24 小時活動劇本',
-      en: 'Generate 24-hour activity scenarios',
+      zh: '生成 24 小時活動劇本與 AI 建議',
+      en: 'Generate 24-hour activity scenarios with AI suggestions',
     },
+    labelKey: 'map.features.scenarioStudio.label',
+    descriptionKey: 'map.features.scenarioStudio.description',
   },
   {
     id: 'ai-forecast',
@@ -146,13 +136,15 @@ const FEATURE_CONFIGS: FeatureConfig[] = [
     gradient: 'from-blue-500 to-purple-500',
     focusRing: 'focus:ring-2 focus:ring-blue-400',
     labels: {
-      zh: 'AI 短期預測',
+      zh: 'AI 預測',
       en: 'AI Forecast',
     },
     descriptions: {
-      zh: '查看 AI 空氣品質預測',
-      en: 'See AI-powered air quality forecasts',
+      zh: 'AI 驅動的空氣品質預測',
+      en: 'AI-driven air quality forecasts',
     },
+    labelKey: 'map.features.aiForecast.label',
+    descriptionKey: 'map.features.aiForecast.description',
   },
   {
     id: 'pollutant-fingerprint',
@@ -165,9 +157,11 @@ const FEATURE_CONFIGS: FeatureConfig[] = [
       en: 'Pollutant Fingerprint',
     },
     descriptions: {
-      zh: '查看污染類型指紋',
-      en: 'Explore pollutant fingerprint insights',
+      zh: '分析污染物特徵並視覺化指紋',
+      en: 'Analyze pollutant signatures and visualize fingerprints',
     },
+    labelKey: 'map.features.pollutantFingerprint.label',
+    descriptionKey: 'map.features.pollutantFingerprint.description',
     requiresAqi: true,
   },
   {
@@ -177,13 +171,15 @@ const FEATURE_CONFIGS: FeatureConfig[] = [
     gradient: 'from-indigo-500 via-purple-500 to-pink-500',
     focusRing: 'focus:ring-2 focus:ring-indigo-400',
     labels: {
-      zh: '行動決策中心',
-      en: 'Action Decision Center',
+      zh: '行動套件',
+      en: 'Action Suite',
     },
     descriptions: {
-      zh: '整合檢視行動 HUD 與活動決策',
-      en: 'View Action HUD and risk decisions together',
+      zh: '整合行動 HUD 與活動決策工具',
+      en: 'Integrate Action HUD and decision tools',
     },
+    labelKey: 'map.features.actionSuite.label',
+    descriptionKey: 'map.features.actionSuite.description',
     requiresAqi: true,
   },
   {
@@ -194,12 +190,14 @@ const FEATURE_CONFIGS: FeatureConfig[] = [
     focusRing: 'focus:ring-2 focus:ring-teal-400',
     labels: {
       zh: '健康建議',
-      en: 'Health Advice',
+      en: 'Health Recommendation',
     },
     descriptions: {
-      zh: '查看個人化健康建議',
-      en: 'View personalized health recommendations',
+      zh: '根據 AQI 提供健康建議',
+      en: 'Provide health advice based on AQI',
     },
+    labelKey: 'map.features.healthRecommendation.label',
+    descriptionKey: 'map.features.healthRecommendation.description',
     requiresAqi: true,
   },
   {
@@ -209,13 +207,15 @@ const FEATURE_CONFIGS: FeatureConfig[] = [
     gradient: 'from-rose-500 to-orange-400',
     focusRing: 'focus:ring-2 focus:ring-rose-400',
     labels: {
-      zh: 'AI 媒體中心',
-      en: 'AI Media Briefing',
+      zh: '媒體簡報',
+      en: 'Media Briefing',
     },
     descriptions: {
-      zh: '生成多級別受眾摘要，快速分享決策重點',
-      en: 'Generate multi-level briefings for different audiences',
+      zh: '生成媒體專用的簡報摘要',
+      en: 'Generate media-ready briefing summaries',
     },
+    labelKey: 'map.features.mediaBriefing.label',
+    descriptionKey: 'map.features.mediaBriefing.description',
     requiresAqi: true,
   },
 ];
@@ -269,28 +269,30 @@ const MapComponent = () => {
     clearScenarios,
   } = useScenarioStudio();
 
+  const { t } = useTranslation();
+
   const defaultCommuteScenarios = useMemo<CommuteScenarioConfig[]>(
     () => [
       {
         id: 'office',
-        label: '上班族 · 七期 → 市政',
-        description: '七期重劃區到台中市政府',
+        label: t('map.defaultScenarios.office.label'),
+        description: t('map.defaultScenarios.office.description'),
         destination: { lat: 24.163162, lng: 120.648676 },
       },
       {
         id: 'parent',
-        label: '親子 · 北屯 → 美術館',
-        description: '北屯兒童公園到國立臺灣美術館',
+        label: t('map.defaultScenarios.parent.label'),
+        description: t('map.defaultScenarios.parent.description'),
         destination: { lat: 24.141608, lng: 120.663539 },
       },
       {
         id: 'runner',
-        label: '夜跑 · 西屯 → 秋紅谷',
-        description: '秋紅谷生態公園環狀步道',
+        label: t('map.defaultScenarios.runner.label'),
+        description: t('map.defaultScenarios.runner.description'),
         destination: { lat: 24.164544, lng: 120.640802 },
       },
     ],
-    []
+    [t]
   );
 
   const [customCommuteScenarios, setCustomCommuteScenarios] = useState<CommuteScenarioConfig[]>([]);
@@ -390,11 +392,11 @@ const MapComponent = () => {
     commuteEnabled: Boolean(selectedCommuteScenario),
   });
   const commuteOriginLabel = selectedCommuteScenario?.origin
-    ? `自訂起點 ${formatCoordinateLabel(selectedCommuteScenario.origin)}`
+    ? `${t('map.commute.customOrigin')} ${formatCoordinateLabel(selectedCommuteScenario.origin)}`
     : location
-      ? '目前位置'
-      : '預設台中市';
-  const commuteDestinationLabel = selectedCommuteScenario?.description ?? '---';
+      ? t('map.commute.currentLocation')
+      : t('map.commute.defaultLabel');
+  const commuteDestinationLabel = selectedCommuteScenario?.description ?? t('map.commute.unknownDestination');
 
   const shareToSocial = useSocialShare();
 
@@ -451,10 +453,10 @@ const MapComponent = () => {
 
   const countdownDescription = useMemo(() => {
     if (!peakWindowText) {
-      return '分享行動建議，讓更多人參與。';
+      return t('map.countdown.sharePrompt');
     }
-    return `目標：在 ${peakWindowText} 前讓更多人看到行動建議。`;
-  }, [peakWindowText]);
+    return t('map.countdown.withWindow', { time: peakWindowText });
+  }, [peakWindowText, t]);
 
   const selectionStep =
     commuteSelectionTarget ?? (!commuteDraftOrigin
@@ -466,13 +468,13 @@ const MapComponent = () => {
   const selectionInstruction = useMemo(() => {
     switch (selectionStep) {
       case 'origin':
-        return '點擊地圖選擇起點位置。';
+        return t('map.selection.origin');
       case 'destination':
-        return '再點一次地圖選擇目的地，可拖曳調整。';
+        return t('map.selection.destination');
       default:
-        return '調整完畢後按下「產生路線」完成。';
+        return t('map.selection.confirm');
     }
-  }, [selectionStep]);
+  }, [selectionStep, t]);
 
   const handleStartCommuteSelection = useCallback(() => {
     setIsSelectingCommute(true);
@@ -660,10 +662,10 @@ const MapComponent = () => {
     return [
       {
         id: 'commute',
-        name: '上班族 · 即時通勤',
+        name: t('missionControl.scenarios.commute.name'),
         description: location
-          ? '根據目前定位估算通勤風險'
-          : '台中市政府商圈（預設地標）',
+          ? t('missionControl.scenarios.commute.description.current')
+          : t('missionControl.scenarios.commute.description.fallback'),
         icon: '💼',
         coordinates: {
           lat: primary.lat,
@@ -672,8 +674,8 @@ const MapComponent = () => {
       },
       {
         id: 'family',
-        name: '親子 · 公園午後',
-        description: '台中都會公園親子草坪',
+        name: t('missionControl.scenarios.family.name'),
+        description: t('missionControl.scenarios.family.description'),
         icon: '👨‍👩‍👧',
         coordinates: {
           lat: 24.245774,
@@ -682,8 +684,8 @@ const MapComponent = () => {
       },
       {
         id: 'runner',
-        name: '運動 · 夜跑河濱',
-        description: '草悟道夜間慢跑路線',
+        name: t('missionControl.scenarios.runner.name'),
+        description: t('missionControl.scenarios.runner.description'),
         icon: '🏃‍♂️',
         coordinates: {
           lat: 24.152084,
@@ -691,7 +693,7 @@ const MapComponent = () => {
         },
       },
     ];
-  }, [location]);
+  }, [location, t]);
 
   const uniqueFeatureConfigs = useMemo(() => {
     const seen = new Set<string>();
@@ -715,10 +717,7 @@ const MapComponent = () => {
     mediaBriefing: () => setShowBriefing(true),
   };
 
-  const texts = LANGUAGE_TEXTS[featureLanguage];
-  const featureHeading = featureLanguage === 'zh'
-    ? `📊 ${briefingContext.cityName} ${texts.missionCenterTitle}`
-    : `📊 ${briefingContext.cityName} ${texts.airQualityMissionSuite}`;
+  const featureHeading = `📊 ${briefingContext.cityName} ${t('map.missionCenterTitle')}`;
 
   const handleLocationSelect = useCallback((selected: { lat: number; lng: number }) => {
     setMapCenter(selected);
@@ -730,13 +729,13 @@ const MapComponent = () => {
     return (
       <div className="flex flex-col items-center justify-center min-h-screen bg-red-50">
         <div className="bg-white p-8 rounded-lg shadow-lg max-w-md">
-          <h2 className="text-xl font-bold text-red-600 mb-4">{texts.apiKeyError}</h2>
+          <h2 className="text-xl font-bold text-red-600 mb-4">{t('map.apiKeyError')}</h2>
           <p className="text-gray-700">
-            {texts.apiKeyErrorMessage}{' '}
+            {t('map.apiKeyErrorMessage')}{' '}
             <code className="bg-gray-100 px-2 py-1 rounded text-sm">
               NEXT_PUBLIC_GOOGLE_MAPS_API_KEY
             </code>
-            {' '}{texts.or}{' '}
+            {' '}{t('map.or')}{' '}
             <code className="bg-gray-100 px-2 py-1 rounded text-sm">
               GOOGLE_MAPS_API_KEY
             </code>
@@ -748,11 +747,11 @@ const MapComponent = () => {
 
   // 顯示載入動畫
   if (loading || !mapCenter) {
-    return <LoadingSpinner message={texts.loading} />;
+    return <LoadingSpinner message={t('map.loading')} />;
   }
 
   return (
-    <APIProvider apiKey={apiKey} onLoad={() => console.log(texts.mapsApiLoaded)}>
+  <APIProvider apiKey={apiKey} onLoad={() => console.log(t('map.mapsApiLoaded'))}>
       <div className="relative h-screen w-full">
         {/* 地圖 */}
         <Map
@@ -872,9 +871,9 @@ const MapComponent = () => {
           {location && <LocationStatus location={location} />}
           {commuteZones.length > 0 && (
             <div className="bg-white/90 backdrop-blur-md px-4 py-3 rounded-2xl shadow-lg text-xs text-slate-600 border border-slate-100 w-72">
-              <p className="font-semibold text-slate-700 mb-1">🚇 通勤圈層級</p>
+              <p className="font-semibold text-slate-700 mb-1">🚇 {t('map.commuteZone.title')}</p>
               <p className="text-[11px] text-slate-500 leading-relaxed">
-                以目前定位為中心的 3 個圈層，越靠近內圈代表風險越高，顏色對應安全等級。
+                {t('map.commuteZone.description')}
               </p>
               <ul className="mt-2 space-y-1.5">
                 {commuteZones
@@ -887,18 +886,14 @@ const MapComponent = () => {
                           className="w-3.5 h-3.5 rounded-full"
                           style={{ backgroundColor: `${zoneColor(zone.level)}BB` }}
                         ></span>
-                        {zone.level === 'safe'
-                          ? '安全'
-                          : zone.level === 'caution'
-                          ? '警示'
-                          : '危險'}
+                        {t(`map.zone.${zone.level}`)}
                       </span>
                       <span className="font-semibold text-slate-700">AQI {Math.round(zone.averageAqi)}</span>
                     </li>
                   ))}
               </ul>
               <p className="text-[10px] text-slate-400 mt-2">
-                每 10 分鐘更新，採樣目前站點推估並預留 TEMPO 快取。
+                {t('map.commuteZone.footer')}
               </p>
             </div>
           )}
@@ -960,7 +955,6 @@ const MapComponent = () => {
               isSelectingRoute={isSelectingCommute}
               onChooseOrigin={handleChooseOriginFromPanel}
               onChooseDestination={handleChooseDestinationFromPanel}
-              language={featureLanguage}
             />
           </div>
         </DialogFrame>
@@ -1128,7 +1122,6 @@ const MapComponent = () => {
                   onFeedback={() => setShowFeedback(true)}
                   onStartDiscussion={aqiData ? handleStartDiscussion : undefined}
                   className="mx-auto max-w-none border border-slate-100 bg-white shadow-none"
-                  language={featureLanguage}
                 />
               ) : (
                 <RiskMatrixPanel

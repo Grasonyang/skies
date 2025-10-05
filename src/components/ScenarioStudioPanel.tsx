@@ -1,4 +1,5 @@
-import React, { useMemo, useState } from 'react';
+import React, { useEffect, useMemo, useState } from 'react';
+import { useTranslation } from '@/lib/i18n';
 import { ScenarioAnalysis, TimeSlot } from '@/hooks/useScenarioStudio';
 
 /**
@@ -28,6 +29,7 @@ interface ScenarioTimelineProps {
  * 呈現 24 小時活動劇本的時間軸、燈號與 Agent 建議
  */
 export function ScenarioTimeline({ scenario, onClose }: ScenarioTimelineProps) {
+  const { t } = useTranslation();
   const { activity, location, timeSlots, bestTimeSlot, worstTimeSlot, averageAqi, recommendation, loading } = scenario;
 
   return (
@@ -36,17 +38,18 @@ export function ScenarioTimeline({ scenario, onClose }: ScenarioTimelineProps) {
       <div className="flex justify-between items-start mb-6">
         <div>
           <h2 className="text-2xl font-bold text-gray-900 mb-1">
-            {activity} - 情境分析
+            {t('scenarioStudio.timeline.heading', { activity })}
           </h2>
           <p className="text-sm text-gray-600">
-            📍 {location.name} {location.address && `• ${location.address}`}
+            {t('scenarioStudio.timeline.locationPrefix')} {location.name}
+            {location.address ? ` • ${location.address}` : ''}
           </p>
         </div>
         {onClose && (
           <button
             onClick={onClose}
             className="text-gray-400 hover:text-gray-600 transition-colors"
-            aria-label="關閉"
+            aria-label={t('scenarioStudio.timeline.close')}
           >
             <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
@@ -58,19 +61,19 @@ export function ScenarioTimeline({ scenario, onClose }: ScenarioTimelineProps) {
       {/* 概覽統計 */}
       <div className="grid grid-cols-3 gap-4 mb-6">
         <div className="bg-blue-50 rounded-lg p-4">
-          <div className="text-xs text-blue-600 font-medium mb-1">平均 AQI</div>
+          <div className="text-xs text-blue-600 font-medium mb-1">{t('scenarioStudio.timeline.averageAqi')}</div>
           <div className="text-2xl font-bold text-blue-900">{averageAqi}</div>
         </div>
         {bestTimeSlot && (
           <div className="bg-green-50 rounded-lg p-4">
-            <div className="text-xs text-green-600 font-medium mb-1">最佳時段</div>
+            <div className="text-xs text-green-600 font-medium mb-1">{t('scenarioStudio.timeline.bestSlot')}</div>
             <div className="text-2xl font-bold text-green-900">{bestTimeSlot.time}</div>
             <div className="text-xs text-green-600 mt-1">AQI {bestTimeSlot.aqi}</div>
           </div>
         )}
         {worstTimeSlot && (
           <div className="bg-red-50 rounded-lg p-4">
-            <div className="text-xs text-red-600 font-medium mb-1">最差時段</div>
+            <div className="text-xs text-red-600 font-medium mb-1">{t('scenarioStudio.timeline.worstSlot')}</div>
             <div className="text-2xl font-bold text-red-900">{worstTimeSlot.time}</div>
             <div className="text-xs text-red-600 mt-1">AQI {worstTimeSlot.aqi}</div>
           </div>
@@ -79,7 +82,7 @@ export function ScenarioTimeline({ scenario, onClose }: ScenarioTimelineProps) {
 
       {/* 時間軸視覺化 */}
       <div className="mb-6">
-        <h3 className="text-sm font-semibold text-gray-700 mb-3">24 小時空氣品質趨勢</h3>
+        <h3 className="text-sm font-semibold text-gray-700 mb-3">{t('scenarioStudio.timeline.trendTitle')}</h3>
         <div className="relative">
           {/* 時間軸背景 */}
           <div className="absolute inset-0 flex items-center">
@@ -118,15 +121,15 @@ export function ScenarioTimeline({ scenario, onClose }: ScenarioTimelineProps) {
             </svg>
           </div>
           <div className="flex-1">
-            <h4 className="text-sm font-semibold text-purple-900 mb-2">AI 智能建議</h4>
+            <h4 className="text-sm font-semibold text-purple-900 mb-2">{t('scenarioStudio.timeline.aiTitle')}</h4>
             {loading ? (
               <div className="flex items-center gap-2">
                 <LoadingSpinner size="sm" />
-                <span className="text-sm text-gray-600">分析中...</span>
+                <span className="text-sm text-gray-600">{t('scenarioStudio.timeline.loading')}</span>
               </div>
             ) : (
               <div className="text-sm text-gray-700 leading-relaxed whitespace-pre-line">
-                {recommendation || '暫無建議'}
+                {recommendation || t('scenarioStudio.timeline.noRecommendation')}
               </div>
             )}
           </div>
@@ -134,11 +137,9 @@ export function ScenarioTimeline({ scenario, onClose }: ScenarioTimelineProps) {
       </div>
 
       {/* 註記 */}
-      <div className="text-xs text-gray-500 border-t pt-3">
-        <p>
-          💡 此分析基於 Google Air Quality API 預測數據與 Decision Engine L1 決策邏輯。
-          實際情況請以即時監測為準，並根據個人健康狀況調整活動計畫。
-        </p>
+      <div className="text-xs text-gray-500 border-t pt-3 space-y-1">
+        <p>{t('scenarioStudio.timeline.disclaimer.line1')}</p>
+        <p>{t('scenarioStudio.timeline.disclaimer.line2')}</p>
       </div>
     </div>
   );
@@ -156,6 +157,7 @@ function TimeSlotMarker({
   isBest: boolean;
   isWorst: boolean;
 }) {
+  const { t } = useTranslation();
   const { riskLevel, aqi } = slot;
 
   // 決定顏色
@@ -196,10 +198,16 @@ function TimeSlotMarker({
       <div className="absolute bottom-full left-1/2 transform -translate-x-1/2 mb-2 opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none z-10">
         <div className="bg-gray-900 text-white text-xs rounded-lg py-2 px-3 whitespace-nowrap shadow-lg">
           <div className="font-semibold">{slot.time}</div>
-          <div>AQI: {aqi}</div>
-          <div>主污染物: {getPollutantName(slot.dominantPollutant)}</div>
-          {isBest && <div className="text-green-400 mt-1">✓ 最佳時段</div>}
-          {isWorst && <div className="text-red-400 mt-1">⚠ 最差時段</div>}
+          <div>{t('scenarioStudio.timeline.tooltip.aqi')}: {aqi}</div>
+          <div>
+            {t('scenarioStudio.timeline.tooltip.dominant')}: {
+              slot.dominantPollutant
+                ? t(`pollutants.long.${slot.dominantPollutant.toLowerCase()}`)
+                : '--'
+            }
+          </div>
+          {isBest && <div className="text-green-400 mt-1">✓ {t('scenarioStudio.timeline.bestSlot')}</div>}
+          {isWorst && <div className="text-red-400 mt-1">⚠ {t('scenarioStudio.timeline.worstSlot')}</div>}
         </div>
       </div>
 
@@ -213,21 +221,6 @@ function TimeSlotMarker({
       )}
     </div>
   );
-}
-
-/**
- * 污染物名稱轉換
- */
-function getPollutantName(code: string): string {
-  const names: Record<string, string> = {
-    pm25: 'PM2.5',
-    pm10: 'PM10',
-    o3: '臭氧',
-    no2: '二氧化氮',
-    so2: '二氧化硫',
-    co: '一氧化碳',
-  };
-  return names[code.toLowerCase()] || code;
 }
 
 /**
@@ -263,59 +256,73 @@ export function ScenarioStudioPanel({
   onPickLocation,
   isPickingLocation,
 }: ScenarioStudioPanelProps) {
+  const { t } = useTranslation();
   // 預設活動類型
   const templates = useMemo(
     () => [
-      { name: '戶外跑步', types: ['park', 'stadium'], icon: '🏃' },
-      { name: '親子公園', types: ['park', 'playground'], icon: '👨‍👩‍👧' },
-      { name: '室內健身', types: ['gym', 'sports_complex'], icon: '💪' },
-      { name: '客製探索', types: ['point_of_interest'], icon: '🎯' },
+      { id: 'run', types: ['park', 'stadium'], icon: '🏃' },
+      { id: 'family', types: ['park', 'playground'], icon: '👨‍👩‍👧' },
+      { id: 'indoor', types: ['gym', 'sports_complex'], icon: '💪' },
+      { id: 'custom', types: ['point_of_interest'], icon: '🎯' },
     ],
     []
   );
 
-  const [customActivity, setCustomActivity] = useState('自訂活動');
+  const defaultActivityLabel = t('scenarioStudio.form.defaultActivity');
+  const [customActivity, setCustomActivity] = useState(defaultActivityLabel);
   const [selectedTemplateIndex, setSelectedTemplateIndex] = useState(0);
+
+  useEffect(() => {
+    setCustomActivity((previous) => {
+      if (!previous || previous === defaultActivityLabel) {
+        return defaultActivityLabel;
+      }
+      return previous;
+    });
+  }, [defaultActivityLabel]);
 
   const selectedTemplate = templates[selectedTemplateIndex] ?? templates[0];
   const canGenerate = Boolean(onGenerateScenario && selectedLocation);
   const locationSummary = selectedLocation
     ? `${selectedLocation.lat.toFixed(4)}, ${selectedLocation.lng.toFixed(4)}`
-    : '請在地圖上點擊位置';
+    : t('scenarioStudio.form.locationPlaceholder');
 
   return (
     <div className="space-y-6">
       {/* 操作列 */}
       {onGenerateScenario && (
         <div className="bg-white rounded-lg shadow p-4">
-          <h3 className="text-lg font-semibold text-slate-800 mb-3">快速情境生成</h3>
+          <h3 className="text-lg font-semibold text-slate-800 mb-3">{t('scenarioStudio.quick.title')}</h3>
           <div className="flex gap-3 flex-wrap">
-            {templates.slice(0, 3).map((activity) => (
-              <button
-                key={activity.name}
-                onClick={() =>
-                  selectedLocation &&
-                  onGenerateScenario(activity.name, selectedLocation, activity.types)
-                }
-                disabled={loading || !selectedLocation}
-                className="flex items-center gap-2 rounded-lg border border-slate-200 bg-white px-4 py-2 text-slate-700 shadow-sm transition-colors hover:bg-slate-100 disabled:cursor-not-allowed disabled:opacity-60"
-              >
-                <span>{activity.icon}</span>
-                <span className="font-medium">{activity.name}</span>
-              </button>
-            ))}
+            {templates.slice(0, 3).map((activity) => {
+              const label = t(`scenarioStudio.templates.${activity.id}`);
+              return (
+                <button
+                  key={activity.id}
+                  onClick={() =>
+                    selectedLocation &&
+                    onGenerateScenario(label, selectedLocation, activity.types)
+                  }
+                  disabled={loading || !selectedLocation}
+                  className="flex items-center gap-2 rounded-lg border border-slate-200 bg-white px-4 py-2 text-slate-700 shadow-sm transition-colors hover:bg-slate-100 disabled:cursor-not-allowed disabled:opacity-60"
+                >
+                  <span>{activity.icon}</span>
+                  <span className="font-medium">{label}</span>
+                </button>
+              );
+            })}
             {scenarios.length > 0 && onClear && (
               <button
                 onClick={onClear}
                 className="px-4 py-2 bg-gray-100 hover:bg-gray-200 text-gray-700 rounded-lg transition-colors"
               >
-                清除所有情境
+                {t('scenarioStudio.quick.clear')}
               </button>
             )}
           </div>
           {!selectedLocation && (
             <p className="mt-3 text-xs text-slate-500">
-              點擊地圖取得最新座標後即可生成指定情境。
+              {t('scenarioStudio.quick.hint')}
             </p>
           )}
         </div>
@@ -325,16 +332,17 @@ export function ScenarioStudioPanel({
       {onGenerateScenario && (
         <div className="bg-white rounded-lg shadow p-4 space-y-4">
           <div className="flex flex-col gap-1">
-            <h3 className="text-lg font-semibold text-slate-800">自訂情境</h3>
+            <h3 className="text-lg font-semibold text-slate-800">{t('scenarioStudio.form.customTitle')}</h3>
             <p className="text-xs text-slate-500">
-              選擇地圖上的位置與活動類型，生成專屬劇本。
+              {t('scenarioStudio.form.customSubtitle')}
             </p>
           </div>
           <div className="grid gap-3 sm:grid-cols-[1fr_auto]">
             <div className="space-y-2">
-              <label className="block text-xs font-semibold text-slate-600">活動名稱</label>
+              <label className="block text-xs font-semibold text-slate-600" htmlFor="scenario-activity">{t('scenarioStudio.form.activityLabel')}</label>
               <input
                 type="text"
+                id="scenario-activity"
                 value={customActivity}
                 onChange={(event) => setCustomActivity(event.target.value)}
                 maxLength={24}
@@ -342,15 +350,16 @@ export function ScenarioStudioPanel({
               />
             </div>
             <div className="space-y-2">
-              <label className="block text-xs font-semibold text-slate-600">活動場域</label>
+              <label className="block text-xs font-semibold text-slate-600" htmlFor="scenario-template">{t('scenarioStudio.form.templateLabel')}</label>
               <select
                 value={selectedTemplateIndex}
                 onChange={(event) => setSelectedTemplateIndex(Number(event.target.value))}
+                id="scenario-template"
                 className="w-full rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm font-medium text-slate-700 focus:border-indigo-400 focus:outline-none focus:ring-2 focus:ring-indigo-200"
               >
                 {templates.map((template, index) => (
-                  <option key={template.name} value={index} className="text-slate-700">
-                    {template.icon} {template.name}
+                  <option key={template.id} value={index} className="text-slate-700">
+                    {template.icon} {t(`scenarioStudio.templates.${template.id}`)}
                   </option>
                 ))}
               </select>
@@ -359,7 +368,7 @@ export function ScenarioStudioPanel({
 
           <div className="rounded-xl border border-slate-200 bg-slate-50 px-4 py-3 text-xs text-slate-600">
             <div className="flex flex-wrap items-center gap-2">
-              <span className="font-semibold text-slate-700">選擇的座標</span>
+              <span className="font-semibold text-slate-700">{t('scenarioStudio.form.selectedCoordinate')}</span>
               <span className="rounded-full border border-slate-200 bg-white px-3 py-1 text-xs font-semibold text-slate-700">
                 {locationSummary}
               </span>
@@ -372,7 +381,7 @@ export function ScenarioStudioPanel({
                   onClick={onRequestLocation}
                   className="ml-auto inline-flex items-center gap-1 rounded-full border border-slate-200 bg-white px-3 py-1 text-[11px] font-semibold text-slate-600 hover:bg-slate-100"
                 >
-                  🎯 重新定位
+                  🎯 {t('scenarioStudio.form.recenter')}
                 </button>
               )}
               {onPickLocation && (
@@ -382,7 +391,7 @@ export function ScenarioStudioPanel({
                   className="inline-flex items-center gap-1 rounded-full border border-indigo-200 bg-indigo-50 px-3 py-1 text-[11px] font-semibold text-indigo-600 hover:bg-indigo-100 disabled:cursor-not-allowed disabled:opacity-60"
                   disabled={isPickingLocation}
                 >
-                  🗺️ {isPickingLocation ? '前往地圖中…' : '在地圖上選擇'}
+                  🗺️ {isPickingLocation ? t('scenarioStudio.form.pickInProgress') : t('scenarioStudio.form.pickOnMap')}
                 </button>
               )}
             </div>
@@ -397,7 +406,7 @@ export function ScenarioStudioPanel({
             }}
             className="w-full rounded-full bg-indigo-500 px-4 py-3 text-sm font-semibold text-white shadow transition hover:bg-indigo-600 disabled:cursor-not-allowed disabled:opacity-60"
           >
-            生成自訂情境
+            {t('scenarioStudio.form.generateButton')}
           </button>
         </div>
       )}
@@ -406,7 +415,7 @@ export function ScenarioStudioPanel({
       {loading && (
         <div className="flex items-center justify-center py-12">
           <LoadingSpinner size="lg" />
-          <span className="ml-3 text-gray-600">生成情境中...</span>
+          <span className="ml-3 text-gray-600">{t('scenarioStudio.loadingState')}</span>
         </div>
       )}
 
@@ -430,7 +439,7 @@ export function ScenarioStudioPanel({
       {!loading && scenarios.length === 0 && !error && (
         <div className="text-center py-12 text-gray-500">
           <div className="text-4xl mb-4">🎯</div>
-          <p>選擇一個活動類型開始生成情境分析</p>
+          <p>{t('scenarioStudio.emptyState')}</p>
         </div>
       )}
     </div>

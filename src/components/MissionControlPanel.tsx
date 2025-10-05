@@ -1,6 +1,7 @@
-'use client';
+"use client";
 
 import React, { useMemo, useState } from 'react';
+import { useTranslation } from '@/lib/i18n';
 import { AQIData } from '@/types';
 import { useBatchAirQuality, useAirQuality } from '@/hooks/useAirQuality';
 import { useAirQualityForecast } from '@/hooks/useAirQualityForecast';
@@ -29,10 +30,10 @@ function buildScenarioKey(lat: number, lng: number) {
   return `${lat.toFixed(3)}:${lng.toFixed(3)}`;
 }
 
-function scenarioSummaryLabel(data: AQIData | null): string {
-  if (!data) return '資料載入中';
+function scenarioSummaryLabel(data: AQIData | null, t: (k: string) => string): string {
+  if (!data) return t('missionControl.loading');
   const level = getAQILevel(data.aqi);
-  return `${level.label} · AQI ${data.aqi}`;
+  return `${t(level.labelKey ?? 'aqi.level.good')} · AQI ${data.aqi}`;
 }
 
 function scenarioSummaryColor(data: AQIData | null): string {
@@ -45,6 +46,7 @@ const MissionControlPanel: React.FC<MissionControlPanelProps> = ({
   className,
   onFeedback,
 }) => {
+  const { t } = useTranslation();
   const [selectedScenarioId, setSelectedScenarioId] = useState(
     scenarios[0]?.id ?? ''
   );
@@ -115,15 +117,15 @@ const MissionControlPanel: React.FC<MissionControlPanelProps> = ({
     >
       <header className="flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
         <div>
-          <h2 className="text-2xl font-bold text-slate-900">🛰️ Mission Control</h2>
+          <h2 className="text-2xl font-bold text-slate-900">🛰️ {t('missionControl.title')}</h2>
           <p className="text-sm text-slate-500">
-            將三個重點場景的即時空氣品質、污染指紋與行動建議整合成單一儀表板。
+            {t('missionControl.description')}
           </p>
         </div>
         <div className="flex items-center gap-2">
           {batchLoading && (
             <span className="rounded-full bg-slate-100 px-3 py-1 text-xs font-semibold text-slate-500">
-              ⏳ 場景載入中
+              ⏳ {t('missionControl.sceneLoading')}
             </span>
           )}
           {batchError && (
@@ -177,7 +179,7 @@ const MissionControlPanel: React.FC<MissionControlPanelProps> = ({
                     color: isSelected ? 'white' : color,
                   }}
                 >
-                  {scenarioSummaryLabel(summary)}
+                  {scenarioSummaryLabel(summary, t)}
                 </div>
               </div>
               <div className="mt-4 flex items-end gap-3">
@@ -190,14 +192,14 @@ const MissionControlPanel: React.FC<MissionControlPanelProps> = ({
                   </span>
                 </div>
                 <div className={`text-xs ${isSelected ? 'text-slate-200' : 'text-slate-500'}`}>
-                  優勢污染：
+                  {t('missionControl.dominantPollutantLabel')}
                   <span className="font-semibold">
                     {summary?.dominantPollutant?.toUpperCase() ?? '—'}
                   </span>
                 </div>
               </div>
               <div className="mt-3 text-[10px] font-medium uppercase tracking-wide">
-                {isSelected ? '目前展示中' : '點擊切換'}
+                {isSelected ? t('missionControl.toggleButton_current') : t('missionControl.toggleButton_switch')}
               </div>
             </button>
           );
@@ -208,7 +210,7 @@ const MissionControlPanel: React.FC<MissionControlPanelProps> = ({
         <div className="flex flex-col gap-4">
           <div className="rounded-2xl border border-slate-200 bg-white/80 p-4">
             <p className="text-xs font-semibold uppercase tracking-wide text-slate-500">
-              選定場景
+              {t('missionControl.selectedScenarioLabel')}
             </p>
             <h3 className="mt-1 text-xl font-bold text-slate-800">
               {selectedScenario?.icon}{' '}
@@ -217,34 +219,34 @@ const MissionControlPanel: React.FC<MissionControlPanelProps> = ({
             <p className="text-xs text-slate-500">
               {selectedScenario?.description}
             </p>
-            <div className="mt-4 rounded-xl bg-slate-50 p-3 text-xs text-slate-500">
-              <p>
-                📍 座標：
-                <span className="ml-1 font-semibold text-slate-700">
-                  {selectedScenario
-                    ? `${selectedScenario.coordinates.lat.toFixed(4)}, ${selectedScenario.coordinates.lng.toFixed(4)}`
-                    : '—'}
-                </span>
-              </p>
-              <p className="mt-1">
-                ⏱️ 更新時間：
-                <span className="ml-1 font-semibold text-slate-700">
-                  {selectedCurrent?.timestamp
-                    ? formatTimestamp(selectedCurrent.timestamp)
-                    : '—'}
-                </span>
-              </p>
-            </div>
+              <div className="mt-4 rounded-xl bg-slate-50 p-3 text-xs text-slate-500">
+                <p>
+                  📍 {t('missionControl.coordinates')}：
+                  <span className="ml-1 font-semibold text-slate-700">
+                    {selectedScenario
+                      ? `${selectedScenario.coordinates.lat.toFixed(4)}, ${selectedScenario.coordinates.lng.toFixed(4)}`
+                      : '—'}
+                  </span>
+                </p>
+                <p className="mt-1">
+                  ⏱️ {t('missionControl.updatedAt')}：
+                  <span className="ml-1 font-semibold text-slate-700">
+                    {selectedCurrent?.timestamp
+                      ? formatTimestamp(selectedCurrent.timestamp)
+                      : '—'}
+                  </span>
+                </p>
+              </div>
             {selectedForecast?.meta && (
               <div className="mt-3 rounded-xl bg-gradient-to-r from-indigo-500/90 to-purple-600/90 p-4 text-white shadow-md">
-                <p className="text-xs uppercase tracking-wide opacity-80">預測摘要</p>
+                <p className="text-xs uppercase tracking-wide opacity-80">{t('missionControl.forecastSummaryTitle')}</p>
                 <div className="mt-2 flex flex-col gap-1 text-sm">
-                  <span>平均 AQI：{selectedForecast.meta.averageAqi}</span>
+                  <span>{t('missionControl.averageAqi')}{selectedForecast.meta.averageAqi}</span>
                   <span>
-                    信心度：{selectedForecast.meta.confidenceScore}（
+                    {t('missionControl.confidenceScore')}{selectedForecast.meta.confidenceScore}（
                     {selectedForecast.meta.confidenceLevel}）
                   </span>
-                  <span>波動度：{selectedForecast.meta.volatility.toFixed(1)}%</span>
+                  <span>{t('missionControl.volatilityLabel', { pct: selectedForecast.meta.volatility.toFixed(1) })}</span>
                 </div>
                 <p className="mt-2 text-xs opacity-80">
                   {selectedForecast.meta.confidenceDescription}

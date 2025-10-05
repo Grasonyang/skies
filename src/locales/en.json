@@ -1,0 +1,210 @@
+{
+  "missionControl": {
+    "title": "Mission Control",
+    "loading": "Loading data",
+    "description": "Consolidates live air quality, pollutant fingerprints and action recommendations for three scenarios into one dashboard.",
+    "sceneLoading": "⏳ Scene loading",
+    "dominantPollutantLabel": "Dominant pollutant:",
+    "toggleButton_current": "Currently showing",
+    "toggleButton_switch": "Click to switch",
+    "forecastSummaryTitle": "Forecast summary",
+    "averageAqi": "Average AQI:",
+    "confidenceScore": "Confidence:",
+    "coordinates": "Coordinates",
+    "updatedAt": "Updated at",
+    "volatilityLabel": "Volatility: {pct}%",
+    "selectedScenarioLabel": "Selected scenario",
+    "scenarios": {
+      "commute": {
+        "name": "Commuter · Real-time commute",
+        "description": {
+          "current": "Estimated commute risk from your current location",
+          "fallback": "Taichung City Hall district (default landmark)"
+        }
+      },
+      "family": {
+        "name": "Family · Park afternoon",
+        "description": "Taichung Metropolitan Park family lawn"
+      },
+      "runner": {
+        "name": "Active · Riverside night run",
+        "description": "Calligraphy Greenway evening jogging loop"
+      }
+    }
+  },
+  "fingerprint": {
+    "errorLoad": "⚠️ Could not load pollutant fingerprint: {error}",
+    "noPollutantData": "No pollutant particles yet — radar will show when data arrives.",
+    "title": "Pollutant Fingerprint",
+    "tab": { "now": "Now", "forecast": "Forecast" },
+    "comparePeriod": "Compare period",
+    "timeSliderHint": "Drag the time slider to inspect pollutant fingerprint across hours. Reserved for TEMPO high-res analysis.",
+    "description": "Compare current pollutant fingerprint with future windows to identify the most harmful pollutants.",
+    "peakLabel": "Peak upper bound {max} {units}",
+    "nowLabel": "Now",
+    "forecastLabel": "Forecast",
+    "noForecastData": "No forecast data"
+  },
+  "geolocation": {
+    "notSupported": "Browser does not support geolocation",
+    "timeout": "GPS geolocation timeout",
+    "failed": "GPS geolocation failed",
+    "permissionDenied": "Permission denied for geolocation",
+    "positionUnavailable": "Position unavailable",
+    "ipRequestFailed": "IP lookup request failed",
+    "ipDataInvalid": "IP lookup returned invalid data",
+    "ipFailed": "IP geolocation failed: {error}"
+  },
+  "defaults": { "city": { "taichung": "Taichung" } },
+  "share": {
+    "title": "Skies Action Advice",
+    "message": "NASA EarthData predicts {cityName} {pollutantLabel}PM2.5 will increase {windowText}! Check: {url}{mayorText} #CleanSkyNow #SpaceApps"
+  },
+  "location": { "gps": "GPS", "ip": "IP", "default": "Default location", "unknown": "Unknown", "accuracy": "Accuracy" },
+  "actionHud": {
+    "title": "⚡ Action Risk HUD",
+    "description": "Decision Engine L1 converts into three actionable recommendations. CTAs can be added to reminders.",
+    "healthPreference": "Health preference:",
+    "general": "General",
+    "healthToggle": "HEALTH TOGGLE",
+    "loading": "Loading...",
+    "noData": "Unable to fetch action recommendations. Try again later.",
+    "feedback": "Feedback",
+    "share": "Start a discussion",
+    "riskIndex": "Risk Index",
+    "recommendedTime": "Recommended window",
+    "bestTime": "Best time",
+    "highestRiskActivity": "Highest risk activity",
+    "missingData": "Air quality data not available yet."
+  },
+  "pollutants": {
+    "dominantLabel": "Dominant pollutant",
+    "concentrationTitle": "Pollutant concentrations",
+    "long": {
+      "pm25": "Fine particulate matter",
+      "pm10": "Particulate matter",
+      "o3": "Ozone",
+      "no2": "Nitrogen dioxide",
+      "so2": "Sulfur dioxide",
+      "co": "Carbon monoxide"
+    }
+  },
+  "risk": { "safe": "Maintain routine", "caution": "Monitor symptoms", "unhealthy": "Prefer indoor alternatives", "dangerous": "Stop exposure immediately" },
+  "aqi": {
+    "level": { "good": "Good", "moderate": "Moderate", "unhealthy_sensitive": "Unhealthy for sensitive groups", "unhealthy": "Unhealthy", "very_unhealthy": "Very Unhealthy", "hazardous": "Hazardous" }
+  },
+  "map": {
+    "loading": "Getting your location...",
+    "apiKeyError": "⚠️ Configuration error",
+    "apiKeyErrorMessage": "Google Maps API key not set. Please set the environment variable.",
+    "or": "or",
+    "mapsApiLoaded": "🗺️ Maps API loaded",
+    "missionCenterTitle": "Air Mission Center",
+    "countdown": {
+      "sharePrompt": "Share action recommendations to get more people involved.",
+      "withWindow": "Goal: get more people to see the action advice before {time}."
+    },
+    "selection": { "origin": "Click map to pick an origin.", "destination": "Click again to pick destination; drag to adjust.", "confirm": "Press 'Generate route' when finished." },
+    "commute": { "customOrigin": "Custom origin", "currentLocation": "Current location", "defaultLabel": "Default Taichung", "unknownDestination": "---" },
+    "commuteZone": { "title": "Commute zone tiers", "description": "Three concentric rings centered on your location; inner rings represent higher risk and map to safety colors.", "footer": "Updated every 10 minutes; sampling current stations and caching for TEMPO." },
+    "zone": { "safe": "Safe", "caution": "Caution", "danger": "Danger" },
+    "defaultScenarios": {
+      "office": { "label": "Office · Q7 → City Hall", "description": "Q7 redevelopment to Taichung City Hall" },
+      "parent": { "label": "Family · Beitun → Museum", "description": "Beitun Children's Park to National Taiwan Museum of Fine Arts" },
+      "runner": { "label": "Runner · Xitun → Qiuhonggu", "description": "Qiuhonggu Ecological Park loop" }
+    },
+    "scenario": { "title": "Scenario Studio", "description": "Generate 24h activity scripts that combine place info and AQI forecasts with AI-driven advice" },
+    "pickLocation": { "title": "Pick scenario location", "step": "Step 1/1", "hint": "Click on the map to select the place to generate a scenario; you can reselect multiple times." },
+    "customCommute": { "title": "Custom commute", "step1": "Step 1/3", "step2": "Step 2/3", "step3": "Step 3/3", "origin": "Origin", "destination": "Destination", "unset": "Unset", "reset": "Reset", "cancel": "Cancel", "confirm": "Generate route" }
+  },
+  "commuteGuardian": {
+    "title": "🚇 Commute Guardian",
+    "description": "Compare commute routes by distance, time, and air quality risk to surface real-time actions.",
+    "refresh": "🔄 Re-evaluate",
+    "origin": "From:",
+    "destination": "To:",
+    "selectingRoute": "Selecting route…",
+    "customRoute": "Custom route",
+    "primaryRoute": "Primary route",
+    "alternativeRoute": "Alternative route",
+    "trafficEstimate": "With traffic:",
+    "primaryPollutant": "Primary pollutant",
+    "worstSample": "Worst sample point",
+    "pollutantFrequency": "Dominant pollutant order:",
+    "noData": "No data",
+    "noRouteData": "No route data available right now. Please refresh later.",
+    "reselectOrigin": "Reselect departure location",
+    "reselectDestination": "Reselect destination",
+    "averageAqi": "Avg {average}",
+    "peakAqi": "Peak {peak}",
+    "cta": {
+      "safe": "Depart now",
+      "caution": "Mask up & depart",
+      "danger": "Delay 30 min"
+    }
+  },
+  "scenarioStudio": {
+    "quick": {
+      "title": "Quick scenario templates",
+      "clear": "Clear all scenarios",
+      "hint": "Pick a point on the map to enable quick generation."
+    },
+    "form": {
+      "customTitle": "Custom scenario",
+      "customSubtitle": "Select a map location and activity type to generate a tailored script.",
+      "activityLabel": "Activity name",
+      "templateLabel": "Activity venue",
+      "selectedCoordinate": "Selected coordinates",
+      "defaultActivity": "Custom activity",
+      "locationPlaceholder": "Click the map to choose a location",
+      "recenter": "Recenter",
+      "pickOnMap": "Pick on map",
+      "pickInProgress": "Picking on map…",
+      "generateButton": "Generate custom scenario"
+    },
+    "templates": {
+      "run": "Outdoor run",
+      "family": "Family park",
+      "indoor": "Indoor fitness",
+      "custom": "Exploration"
+    },
+    "timeline": {
+      "heading": "{activity} – Scenario analysis",
+      "locationPrefix": "📍",
+      "close": "Close",
+      "averageAqi": "Average AQI",
+      "bestSlot": "Best window",
+      "worstSlot": "Worst window",
+      "trendTitle": "24h air quality trend",
+      "aiTitle": "AI insight",
+      "loading": "Analyzing...",
+      "noRecommendation": "No recommendation yet.",
+      "disclaimer": {
+        "line1": "Insights rely on Google Air Quality forecasts and Decision Engine L1 guidance.",
+        "line2": "Cross-check with live monitoring and adjust to personal health conditions."
+      },
+      "tooltip": {
+        "aqi": "AQI",
+        "dominant": "Dominant pollutant"
+      }
+    },
+    "loadingState": "Generating scenario...",
+    "emptyState": "Pick an activity type to start your scenario"
+  },
+  "countdown": {
+    "title": "⏳ Action countdown",
+    "description": "Share action advice to get more people involved.",
+    "goal": "Goal {count}",
+    "achieved": "Mobilized {count}",
+    "expired": "Action window closed",
+    "remaining": "Time remaining",
+    "untilPeak": "Time until forecast peak",
+    "callToAction": {
+      "active": "Boost sharing to widen reach!",
+      "expired": "Act now and keep monitoring!"
+    },
+    "share": "Start a discussion"
+  },
+  "forecast": { "loading": "Loading forecast...", "errorTitle": "Forecast load failed", "trend": { "up": "Worsening", "down": "Improving", "stable": "Stable" }, "title": "Next 24 hours forecast", "accuracyTitle": "Forecast accuracy", "summary": { "average": "Average", "min": "Min", "max": "Max" } },
+  "airQuality": { "errorTitle": "Could not load data", "hint": { "noStations": "Hint: there may be no monitoring stations in this area", "tryOtherLocation": "Try another location" }, "title": "Air Quality Index" }
+}

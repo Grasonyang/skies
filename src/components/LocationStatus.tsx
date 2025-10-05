@@ -1,6 +1,7 @@
 'use client';
 
 import React from 'react';
+import { useTranslation } from '@/lib/i18n';
 import { Location } from '@/types';
 
 interface LocationStatusProps {
@@ -14,9 +15,9 @@ const sourceIcons = {
 };
 
 const sourceLabels = {
-  gps: 'GPS 定位',
-  ip: 'IP 定位',
-  default: '預設位置',
+  gps: 'location.gps',
+  ip: 'location.ip',
+  default: 'location.default',
 };
 
 const sourceColors = {
@@ -26,11 +27,12 @@ const sourceColors = {
 };
 
 export default function LocationStatus({ location }: LocationStatusProps) {
+  const { t } = useTranslation();
   const accuracyText = location.accuracy
     ? location.accuracy < 1000
       ? `${Math.round(location.accuracy)}m`
       : `${(location.accuracy / 1000).toFixed(1)}km`
-    : '未知'; // TODO: Make this multilingual
+    : t('location.unknown');
 
   return (
     <div
@@ -41,10 +43,10 @@ export default function LocationStatus({ location }: LocationStatusProps) {
       <span className="text-lg">{sourceIcons[location.source]}</span>
       <div className="flex flex-col">
         <span className="text-xs font-semibold">
-          {sourceLabels[location.source]}
+          {t(sourceLabels[location.source] ?? 'location.unknown')}
         </span>
         {location.accuracy && (
-          <span className="text-xs opacity-75">精度: {accuracyText}</span>
+          <span className="text-xs opacity-75">{t('location.accuracy')}: {accuracyText}</span>
         )}
       </div>
     </div>
