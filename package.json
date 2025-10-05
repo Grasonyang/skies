@@ -10,6 +10,7 @@
     "test": "vitest run"
   },
   "dependencies": {
+    "@doist/todoist-ai": "^4.9.3",
     "@googlemaps/markerclusterer": "^2.6.2",
     "@vis.gl/react-google-maps": "^1.5.5",
     "next": "15.5.4",
