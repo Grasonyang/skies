@@ -15,7 +15,7 @@ import { decodePolyline } from '@/lib/polyline';
 export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
 
-const GOOGLE_MAPS_API_KEY = process.env.GOOGLE_MAPS_API_KEY_SERVER || process.env.GOOGLE_MAPS_API_KEY;
+const GOOGLE_MAPS_API_KEY = process.env.GOOGLE_MAPS_API_KEY_SERVER;
 const DIRECTIONS_API_URL = 'https://maps.googleapis.com/maps/api/directions/json';
 const DISTANCE_MATRIX_API_URL = 'https://maps.googleapis.com/maps/api/distancematrix/json';
 

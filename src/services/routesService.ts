@@ -7,10 +7,10 @@ class RoutesService {
   private useMockData: boolean;
 
   constructor() {
-    this.useMockData = !process.env.GOOGLE_API_KEY;
+    this.useMockData = !process.env.NEXT_PUBLIC_GOOGLE_MAPS_API_KEY;
 
     if (this.useMockData) {
-      console.warn('⚠️ GOOGLE_API_KEY 未設定，通勤路線將使用模擬數據');
+      console.warn('⚠️ NEXT_PUBLIC_GOOGLE_MAPS_API_KEY 未設定，通勤路線將使用模擬數據');
     }
   }
 
