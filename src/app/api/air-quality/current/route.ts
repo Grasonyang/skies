@@ -6,7 +6,7 @@ import { AirQualityResponse, AQIData } from '@/types';
 export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
 
-const GOOGLE_MAPS_API_KEY = process.env.GOOGLE_MAPS_API_KEY;
+const GOOGLE_MAPS_API_KEY = process.env.GOOGLE_MAPS_API_KEY_SERVER || process.env.GOOGLE_MAPS_API_KEY;
 const AIR_QUALITY_API_URL = 'https://airquality.googleapis.com/v1/currentConditions:lookup';
 
 class HttpError extends Error {
